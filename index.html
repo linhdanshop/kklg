@@ -3,83 +3,135 @@
 <head>
   <meta charset="utf-8" />
   <title>KIỂM KÊ & LÀM GIÁ</title>
-  <meta name="viewport" content="width=1280, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f6f8;color:#111;min-width:1260px}
-    .app{width:1260px;margin:0 auto;padding:6px 8px 14px}
-    .topbar{display:grid;grid-template-columns:305px 1fr 260px;gap:8px;align-items:center;margin-bottom:4px}
-    .dateBox{background:#fff200;border:1px solid #bbb;text-align:center;font-size:22px;font-weight:700;padding:4px 8px;min-height:34px}
-    .tabs{display:flex;align-items:center;justify-content:center;gap:18px;background:#fff;border:1px solid #d0d0d0;min-height:34px}
-    .tabBtn{border:0;background:transparent;font-size:20px;font-weight:800;cursor:pointer;padding:4px 8px;color:#c00}
-    .tabBtn.active{color:#d40000;text-decoration:underline;text-underline-offset:4px}
-    .tabBtn.disabled{color:#2b5f98;text-decoration:none;opacity:.9}
-    .authBox{background:#fff;border:1px solid #d0d0d0;padding:5px 7px;display:flex;gap:6px;align-items:center;justify-content:flex-end;font-size:13px;min-height:34px}
-    button,.btn{border:1px solid #888;background:#fff;border-radius:4px;padding:6px 10px;cursor:pointer;font-size:14px;font-weight:700}
-    button:hover,.btn:hover{background:#f0f7ff}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f5f7;color:#111}
+    .app{max-width:1500px;margin:0 auto;padding:6px}
+    .topbar{display:grid;grid-template-columns:270px 1fr 330px;gap:8px;align-items:center;margin-bottom:6px}
+    .dateBox{background:#fff200;border:1px solid #aaa;text-align:center;font-size:23px;font-weight:900;padding:5px;min-height:38px}
+    .tabs{display:flex;align-items:center;justify-content:center;gap:16px;background:#fff;border:1px solid #bdbdbd;min-height:38px}
+    .tabBtn{border:0;background:transparent;font-size:22px;font-weight:900;cursor:pointer;padding:4px 12px;color:#315c8b}
+    .tabBtn.active{color:#c00000;text-decoration:underline;text-underline-offset:4px}
+    .authBox{background:#fff;border:1px solid #bdbdbd;padding:4px 6px;display:flex;gap:6px;align-items:center;justify-content:flex-end;min-height:38px;font-size:13px}
+    button,.btn{border:1px solid #888;background:#fff;border-radius:4px;padding:6px 9px;cursor:pointer;font-size:14px;font-weight:800;white-space:nowrap}
+    button:hover,.btn:hover{background:#eef7ff}
     button.primary{background:#e6f4ff;border-color:#3483c9;color:#064c83}
-    button.danger{background:#fff0f0;border-color:#d33;color:#b00000}
-    button.green{background:#eaf8e6;border-color:#51a050;color:#1d6c1d}
+    button.danger{background:#fff0f0;border-color:#d33;color:#aa0000}
+    button.green{background:#edffe9;border-color:#54a34f;color:#196819}
+    button.warn{background:#fff8dd;border-color:#d0a700;color:#7a5200}
+    button.active{background:#004b91;color:#fff;border-color:#004b91}
     button:disabled{opacity:.45;cursor:not-allowed}
-    .layout{display:grid;grid-template-columns:300px 1fr;gap:10px}
-    .leftPanel,.rightPanel{background:#fff;border:1px solid #bdbdbd;min-height:665px}
-    .sectionTitle{text-align:center;border-bottom:1px solid #111;font-size:20px;font-weight:800;color:#f00;padding:5px 4px;letter-spacing:.5px}
-    .leftTools{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px;border-bottom:1px solid #ddd}
-    .leftTools .btn{flex:1;text-align:center;color:#315c00;background:#f7fff0;border-color:#b7cf9b}
-    .miniInfo{font-size:12px;color:#555;text-align:right;line-height:1.25}
-    .stockBox{height:585px;overflow:auto;background:#fff}
+    input,select,textarea{border:1px solid #aaa;border-radius:4px;padding:6px;font-size:14px;background:#fff}
+    select[multiple]{min-height:64px;min-width:95px}
+    .msg{border:1px solid #cdd8e2;background:#f8fbff;color:#123;padding:7px 10px;margin-bottom:6px;font-size:14px;border-radius:4px}
+    .msg.error{border-color:#c33;background:#fff0f0;color:#9c0000}
+    .hidden{display:none!important}
+    .muted{color:#666;font-size:12px}
+    .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid #ccc;padding:7px;margin-bottom:6px}
+    .bar .spacer{flex:1}
+    .sessionSelect{min-width:260px;max-width:420px}
+    .mainGrid{display:grid;grid-template-columns:330px 1fr;gap:8px}
+    .panel{background:#fff;border:1px solid #bbb;min-height:650px;overflow:hidden}
+    .panelTitle{text-align:center;font-size:20px;font-weight:900;color:#e00000;padding:6px;border-bottom:1px solid #111;letter-spacing:.5px}
+    .leftTools{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:6px;border-bottom:1px solid #ddd}
+    .stockPreview{height:590px;overflow:auto}
     table{border-collapse:collapse;width:100%}
-    th,td{border:1px solid #111;padding:4px 5px;font-size:15px;line-height:1.2;background:#fff}
-    th{font-weight:800;background:#f7f7f7;text-align:center;position:sticky;top:0;z-index:2}
-    .stockTable th{font-size:21px;font-weight:400;background:#fff}
-    .stockTable td{font-size:22px;height:27px}
-    .stockTable td:nth-child(1){width:230px}
-    .stockTable td:nth-child(2){width:52px;text-align:right}
-    .rightHeader{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:5px 7px;border-bottom:1px solid #ddd}
-    .rightTitle{text-align:center;font-size:21px;font-weight:700;color:#111}
-    .filterRow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 7px;border-bottom:1px solid #ddd;background:#fafafa}
-    label{font-size:14px;font-weight:700}
-    select,input[type="number"],input[type="date"],input[type="text"]{height:31px;border:1px solid #999;border-radius:3px;padding:3px 6px;font-size:14px;background:#fff}
-    select{min-width:78px}
-    .rackSelect{width:110px;text-align:center;font-size:16px;font-weight:700}
-    .smallInput{width:78px;text-align:center}
-    .excludeInput{width:210px}
-    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:6px 7px;border-bottom:1px solid #ddd;background:#fff}
-    .stat{border:1px solid #c9c9c9;border-radius:5px;padding:5px 6px;background:#fdfdfd;text-align:center;font-size:13px}
-    .stat b{display:block;font-size:20px;color:#0b5394;margin-top:1px}
+    th,td{border:1px solid #222;padding:4px 5px;line-height:1.2;background:#fff;vertical-align:middle}
+    th{background:#f7f7f7;font-weight:900;text-align:center;position:sticky;top:0;z-index:2}
+    .stockTable th{font-size:20px;background:#fff}
+    .stockTable td{font-size:18px;height:28px}
+    .filters{display:flex;gap:7px;align-items:flex-start;flex-wrap:wrap;padding:8px;border-bottom:1px solid #d8d8d8;background:#fbfbfb}
+    .filters label{font-weight:800;margin-top:7px}
+    .stats{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;padding:7px;border-bottom:1px solid #ddd;background:#fff}
+    .stat{border:1px solid #ccc;background:#f8f8f8;text-align:center;padding:5px;font-size:12px;border-radius:4px;min-height:42px}
+    .stat b{display:block;font-size:19px;color:#004b8d;margin-top:1px}
     .tableWrap{height:500px;overflow:auto;background:#fff}
-    .checkTable{min-width:930px}
-    .checkTable th{font-size:21px;font-weight:400;background:#fff;top:0}
-    .checkTable td{font-size:19px;height:33px;vertical-align:middle}
-    .checkTable td:nth-child(1){width:58px;text-align:center}
-    .checkTable td:nth-child(2){width:250px;font-weight:700}
-    .checkTable td:nth-child(3){width:95px;text-align:right}
-    .checkTable td:nth-child(4),.checkTable td:nth-child(5){width:90px;text-align:center}
-    .checkTable td:nth-child(6),.checkTable td:nth-child(7){width:120px;text-align:right;font-weight:700}
-    .checkTable input{width:82px;height:27px;font-size:18px;text-align:right;border:1px solid #999;border-radius:3px;padding:2px 5px}
-    .neg{color:#c00000;background:#fff2f2!important}
-    .pos{color:#0b6b1c;background:#f1fff1!important}
-    .blankActual{color:#777;background:#fafafa!important}
-    .pager{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #ddd;padding:7px;background:#fafafa;font-size:14px}
-    .msg{margin:6px 0;padding:8px 10px;border:1px solid #e1c14b;background:#fff7d6;color:#5c4300;border-radius:5px;font-size:14px}
-    .msg.error{border-color:#d33;background:#fff0f0;color:#8a0000}
-    .hide{display:none!important}
-    .muted{color:#666;font-size:13px}
-    .fileName{font-size:12px;color:#444;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .checkTable th{font-size:16px}
+    .checkTable td{font-size:15px;text-align:center;height:34px}
+    .checkTable td.codeCell{text-align:left;font-weight:800;min-width:145px}
+    .nameLine{font-size:11px;color:#666;font-weight:400;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .qtyBox{display:flex;gap:4px;justify-content:center;align-items:center}
+    .qtyBox input{width:62px;height:28px;text-align:center;padding:3px;font-size:15px}
+    .dkBtn{padding:3px 5px;font-size:12px;min-width:32px;background:#fffbe6}
+    .dkBtn.on{background:#ffe900;border-color:#555;color:#000}
+    .noteInput{min-width:140px;width:100%;height:28px;padding:3px 5px}
+    .neg{color:#c00000;font-weight:900}
+    .pos{color:#007000;font-weight:900}
+    .blank{color:#999;font-size:12px}
+    .warnText{color:#cc0000;font-weight:900;font-size:11px;margin-left:4px}
+    .printed{background:#d9d9d9!important;color:#555}
+    .pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px;border-top:1px solid #ddd;background:#fafafa}
 
-    .loginModal{position:fixed;inset:0;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;z-index:9999}
-    .loginCard{width:430px;background:#fff;border:2px solid #333;border-radius:10px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
-    .loginTitle{text-align:center;font-size:24px;font-weight:900;margin-bottom:12px;color:#b00000}
-    .loginLine{display:flex;gap:8px;margin-bottom:10px;align-items:center}
-    .loginLine input{flex:1;height:38px;font-size:18px}
-    .staffGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
-    .staffGrid button{font-size:18px;height:42px;background:#f6fff3;border-color:#62a35c;color:#176417}
-    .loginNote{margin-top:10px;font-size:13px;color:#555;text-align:center}
-    .roleBadge{font-weight:800;color:#0b5394}
+    .lamgiaWrap{background:#fff;border:1px solid #bbb;min-height:650px;overflow:hidden}
+    .lamgiaToolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px;border-bottom:1px solid #ddd;background:#fbfbfb}
+    .lamgiaToolbar input{height:32px}
+    .lgTableBox{height:570px;overflow:auto;background:#fff}
+    .lgTable{width:max-content;min-width:100%;border-collapse:collapse}
+    .lgTable th{font-size:19px;background:#fff200;top:0;z-index:5;min-width:58px}
+    .lgTable th.sub{background:#f7f7f7;font-size:15px;top:32px;z-index:4}
+    .lgTable td{font-size:18px;height:30px;text-align:center;min-width:58px}
+    .lgCode{font-weight:800;text-align:left!important;min-width:80px!important;background:#e7f2ff!important}
+    .lgStock{font-weight:800;min-width:54px!important}
+    .lgStatus{font-size:12px!important;font-weight:900;min-width:84px!important;white-space:nowrap}
+    .stGood{color:#008000;background:#efffed!important}
+    .stBad{color:#005fbd;background:#eef6ff!important}
+    .stOver{color:#d00000;background:#fff0f0!important}
+    .stFull{color:#333;background:#eee!important}
+    .lgDoneCell{min-width:58px!important}
+    .lgDoneRow td,.lgDoneRow .lgCode{background:#d7d7d7!important;color:#555}
+    .lgQtyOne{color:#a000a0}
+    .shelfTools{display:flex;gap:5px;align-items:center;flex-wrap:wrap;padding:6px 8px;border-bottom:1px solid #ddd;background:#fff}
+    .smallInput{width:80px}
+    .wideInput{width:210px}
+
+    .loginModal{position:fixed;inset:0;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;z-index:9999;padding:12px}
+    .loginCard{width:440px;background:#fff;border:2px solid #333;border-radius:10px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    .loginTitle{text-align:center;font-size:25px;font-weight:900;color:#b00000;margin-bottom:12px}
+    .loginLine{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;margin-bottom:10px}
+    .staffGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+    .staffGrid button{height:42px;background:#f5fff0;border-color:#66aa66;color:#116611;font-size:17px}
+    .loginNote{text-align:center;color:#555;font-size:13px;margin-top:8px}
+
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:9000;display:flex;align-items:center;justify-content:center;padding:14px}
+    .modalCard{background:#fff;border:2px solid #333;border-radius:8px;max-width:920px;width:95%;max-height:90vh;overflow:auto;padding:14px}
+    .modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .modalHead b{font-size:20px;color:#b00000}
+    .capTable input{width:80px;text-align:center}
+    .capTable td,.capTable th{font-size:14px}
+
+    @media (max-width: 760px){
+      body{background:#fff}
+      .app{padding:4px;max-width:none}
+      .topbar{grid-template-columns:1fr;gap:4px}
+      .dateBox{font-size:20px}
+      .tabs{gap:8px}
+      .tabBtn{font-size:20px}
+      .authBox{justify-content:center}
+      .bar{font-size:12px;gap:5px}
+      .sessionSelect{min-width:100%;max-width:100%}
+      .mainGrid{grid-template-columns:1fr}
+      .leftPanelMobileHide{display:none!important}
+      .panel{min-height:0}
+      .stockPreview{height:220px}
+      .filters{gap:5px;align-items:center}
+      select[multiple]{height:52px;min-width:75px}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .tableWrap{height:calc(100vh - 360px);min-height:360px}
+      .checkTable th,.checkTable td{font-size:14px;padding:4px 3px}
+      .checkTable td.codeCell{min-width:130px}
+      .qtyBox input{width:58px}
+      .noteInput{min-width:110px}
+      .lamgiaToolbar,.shelfTools{gap:4px}
+      .lgTableBox{height:calc(100vh - 250px);min-height:430px}
+      .lgTable th{font-size:16px}.lgTable td{font-size:16px}
+      .loginCard{width:100%}
+      .staffGrid{grid-template-columns:repeat(2,1fr)}
+    }
   </style>
 </head>
 <body>
@@ -87,664 +139,1041 @@
   <div class="topbar">
     <div class="dateBox" id="dateTitle">Ngày --/--/----</div>
     <div class="tabs">
-      <button class="tabBtn active" id="tabKiemKe">KIỂM KÊ</button>
-      <button class="tabBtn disabled" id="tabLamGia" title="Tab làm giá sẽ làm sau">LÀM GIÁ</button>
+      <button class="tabBtn" id="tabKiemKe" data-tab="kiemke">KIỂM KÊ</button>
+      <button class="tabBtn active" id="tabLamGia" data-tab="lamgia">LÀM GIÁ</button>
     </div>
     <div class="authBox">
       <span id="loginStatus" class="muted">Chưa đăng nhập</span>
       <button id="openLoginBtn" class="primary">Đăng nhập</button>
-      <button id="logoutBtn" class="hide">Thoát</button>
+      <button id="logoutBtn" class="hidden">Thoát</button>
     </div>
   </div>
 
-  <div id="configMsg" class="msg">
-    Chọn Admin hoặc nhân viên để vào web. Bản này dùng mật khẩu nội bộ + Firebase Anonymous, không dùng Google login.
-  </div>
+  <div id="statusMsg" class="msg">Bản V5: tách KIỂM KÊ và LÀM GIÁ riêng, mặc định mở LÀM GIÁ.</div>
 
-  <div id="loginModal" class="loginModal hide">
+  <div id="loginModal" class="loginModal hidden">
     <div class="loginCard">
       <div class="loginTitle">ĐĂNG NHẬP</div>
       <div class="loginLine">
         <input id="adminPass" type="password" placeholder="Mật khẩu Admin" autocomplete="current-password" />
         <button id="adminLoginBtn" class="primary">Admin</button>
       </div>
-      <div class="muted" style="text-align:center;font-weight:700">Nhân viên nhấp tên là vào</div>
-      <div class="staffGrid">
-        <button data-staff="An">An</button>
-        <button data-staff="Nguyệt">Nguyệt</button>
-        <button data-staff="Thủy">Thủy</button>
-      </div>
-      <div class="loginNote">Admin được nhập Excel / xuất Excel / xóa ngày. Nhân viên chỉ kiểm kê và lọc danh sách.</div>
+      <div class="muted" style="text-align:center;font-weight:800">Nhân viên nhập mật khẩu rồi bấm tên</div>
+      <input id="staffPass" type="password" placeholder="Mật khẩu nhân viên" style="width:100%;height:36px;margin-top:8px" />
+      <div class="staffGrid" id="staffGrid"></div>
+      <div class="loginNote">Mặc định: An 111 | Nguyệt 222 | Thủy 333 | Huyền 444. Admin: @N12345678</div>
     </div>
   </div>
 
-  <div class="layout">
-    <div class="leftPanel">
-      <div class="sectionTitle">TỒN KHO HỆ THỐNG</div>
+  <div id="historyModal" class="modal hidden">
+    <div class="modalCard">
+      <div class="modalHead"><b id="historyTitle">Lịch sử</b><button id="closeHistoryBtn">Đóng</button></div>
+      <div id="historyBody"></div>
+    </div>
+  </div>
+
+  <div id="capacityModal" class="modal hidden">
+    <div class="modalCard">
+      <div class="modalHead"><b>SET KỆ CHỨA ĐỒ</b><button id="closeCapacityBtn">Đóng</button></div>
+      <div class="muted">Sửa SL sức chứa, số mã tối đa, thứ tự, ẩn/hiện. Bấm Lưu set kệ để áp dụng.</div>
+      <table class="capTable" style="margin-top:8px">
+        <thead><tr><th>Kệ</th><th>SL sức chứa</th><th>Số mã tối đa</th><th>Thứ tự</th><th>Hiển thị</th></tr></thead>
+        <tbody id="capacityBody"></tbody>
+      </table>
+      <div style="margin-top:10px;text-align:right"><button id="saveCapacityBtn" class="green">Lưu set kệ</button></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <label>Ngày</label><input id="workDate" type="date" />
+    <label>Danh sách đã up</label><select id="sessionSelect" class="sessionSelect"></select>
+    <button id="loadSessionsBtn">Tải danh sách</button>
+    <button id="loadSessionBtn" class="primary">Mở file</button>
+    <span class="spacer"></span>
+    <input id="excelInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+    <label for="excelInput" id="uploadLabel" class="btn green">Up Excel LÀM GIÁ</label>
+    <button id="deleteSessionBtn" class="danger">Xóa file đang chọn</button>
+  </div>
+
+  <div id="kiemkePage" class="mainGrid hidden">
+    <div id="stockPanel" class="panel">
+      <div class="panelTitle">TỒN KHO HỆ THỐNG</div>
       <div class="leftTools">
-        <input id="excelInput" type="file" accept=".xlsx,.xls,.csv" class="hide" />
-        <label for="excelInput" class="btn">Nhập excel</label>
-        <div class="miniInfo">
-          <div id="fileName" class="fileName">Chưa nhập file</div>
-          <div id="importInfo">0 mã</div>
-        </div>
+        <button id="toggleStockBtn">Ẩn/Hiện tồn</button>
+        <div class="muted"><div id="kkFileName">Chưa có file</div><div id="kkRawInfo">0 dòng</div></div>
       </div>
-      <div class="stockBox">
-        <table class="stockTable">
-          <thead><tr><th>Mã</th><th>Tồn</th></tr></thead>
-          <tbody id="stockBody"></tbody>
-        </table>
+      <div class="stockPreview">
+        <table class="stockTable"><thead><tr><th>Mã</th><th>Tồn</th></tr></thead><tbody id="stockBody"></tbody></table>
       </div>
     </div>
 
-    <div class="rightPanel">
-      <div class="rightHeader">
-        <div class="rightTitle">Danh sách kiểm kê</div>
-        <div>
-          <label>Ngày </label>
-          <input type="date" id="workDate" />
-        </div>
-        <button id="loadDateBtn">Tải ngày</button>
-      </div>
-
-      <div class="filterRow">
-        <label>Chọn Kệ</label>
-        <select id="rackFilter" class="rackSelect">
+    <div class="panel">
+      <div class="panelTitle">DANH SÁCH KIỂM KÊ</div>
+      <div class="filters">
+        <label>Kệ</label><select id="kkRackInclude" multiple></select>
+        <label>Loại trừ</label><select id="kkRackExclude" multiple></select>
+        <label>Tồn</label><select id="kkStockOp"><option value="">Không lọc</option><option>&gt;</option><option>&gt;=</option><option>&lt;</option><option>&lt;=</option><option>=</option><option value="NEG">Âm</option><option value="NOT0">Khác 0</option></select>
+        <input id="kkStockVal" class="smallInput" type="number" placeholder="SL" />
+        <input id="kkSearch" class="wideInput" placeholder="Tìm mã / tên SP" />
+        <select id="kkStatusFilter">
           <option value="ALL">Tất cả</option>
+          <option value="NONE">Chưa nhập gì</option>
+          <option value="DONE_DUOI">Đã làm Dưới</option>
+          <option value="NOT_DUOI">Chưa làm Dưới</option>
+          <option value="DONE_TREN">Đã làm Trên</option>
+          <option value="NOT_TREN">Chưa làm Trên</option>
+          <option value="DONE_BOTH">Đã đủ Dưới + Trên</option>
+          <option value="NOT_BOTH">Chưa đủ Dưới + Trên</option>
+          <option value="NEG">Lệch âm</option>
+          <option value="POS">Lệch dương</option>
+          <option value="REPRINT">In lại tem</option>
+          <option value="NOT_PRINTED">Chưa in tem</option>
+          <option value="NO_COLOR">Mã không màu</option>
         </select>
-        <label id="excludeLabel">Loại trừ</label>
-        <input id="excludeRacks" type="text" class="excludeInput" placeholder="VD: A,H,K" title="Nhập các kệ muốn loại trừ, cách nhau bằng dấu phẩy" />
-        <label>Tồn</label>
-        <select id="stockOp">
-          <option value="">Không lọc</option>
-          <option value=">">&gt;</option>
-          <option value=">=">&gt;=</option>
-          <option value="<">&lt;</option>
-          <option value="<=">&lt;=</option>
-          <option value="=">=</option>
+        <select id="kkViewMode">
+          <option value="FULL">Đầy đủ</option>
+          <option value="DUOI">Kiểm kho dưới</option>
+          <option value="TREN">Kiểm kho trên</option>
+          <option value="TEM">In lại tem</option>
         </select>
-        <input id="stockVal" type="number" class="smallInput" placeholder="SL" />
-        <button id="clearFilterBtn">Xóa lọc</button>
-        <button id="exportBtn" class="green">Xuất excel</button>
-        <button id="deleteDateBtn" class="danger">Xóa ngày</button>
+        <button id="kkClearFilterBtn">Xóa lọc</button>
+        <button id="kkApplyDKDuoiBtn" class="warn">ĐK Dưới lọc</button>
+        <button id="kkApplyDKTrenBtn" class="warn">ĐK Trên lọc</button>
+        <button id="kkExportBtn" class="green">Xuất Excel</button>
       </div>
-
       <div class="stats">
-        <div class="stat">Tồn hệ thống<b id="statTotal">0</b></div>
-        <div class="stat">Đang lọc<b id="statFiltered">0</b></div>
-        <div class="stat">Đã nhập kiểm<b id="statCounted">0</b></div>
-        <div class="stat">Lệch âm<b id="statNeg">0</b></div>
-        <div class="stat">Lệch dương<b id="statPos">0</b></div>
+        <div class="stat">Tồn hệ thống<b id="kkStatTotalStock">0</b></div>
+        <div class="stat">Đang lọc<b id="kkStatFiltered">0</b></div>
+        <div class="stat">Đã nhập kiểm<b id="kkStatDone">0</b></div>
+        <div class="stat">Lệch âm<b id="kkStatNeg">0</b></div>
+        <div class="stat">Lệch dương<b id="kkStatPos">0</b></div>
+        <div class="stat">In lại tem<b id="kkStatReprint">0</b></div>
+        <div class="stat">Đã in tem<b id="kkStatPrinted">0</b></div>
+        <div class="stat">Chưa in tem<b id="kkStatNotPrinted">0</b></div>
       </div>
-
-      <div class="tableWrap">
-        <table class="checkTable">
-          <thead>
-            <tr>
-              <th>STT</th><th>Mã</th><th>Tồn</th><th>Dưới</th><th>Trên</th><th>Chênh lệch</th><th>SL Thực tế</th>
-            </tr>
-          </thead>
-          <tbody id="checkBody"></tbody>
-        </table>
-      </div>
-
-      <div class="pager">
-        <div>
-          <button id="prevPageBtn">◀ Trước</button>
-          <button id="nextPageBtn">Sau ▶</button>
-        </div>
-        <div id="pageInfo">Trang 0/0</div>
-        <div>
-          <label>Dòng/trang</label>
-          <select id="pageSize">
-            <option>100</option>
-            <option selected>300</option>
-            <option>500</option>
-            <option>1000</option>
-          </select>
-        </div>
-      </div>
+      <div class="tableWrap"><table class="checkTable"><thead id="kkHead"></thead><tbody id="kkBody"></tbody></table></div>
+      <div class="pager"><div><button id="kkPrevBtn">◀ Trước</button><button id="kkNextBtn">Sau ▶</button></div><div id="kkPageInfo">Trang 0/0</div><div><label>Dòng/trang </label><select id="kkPageSize"><option>100</option><option selected>300</option><option>500</option><option>1000</option></select></div></div>
     </div>
+  </div>
+
+  <div id="lamgiaPage" class="lamgiaWrap">
+    <div class="panelTitle">DANH SÁCH LÀM GIÁ</div>
+    <div class="lamgiaToolbar">
+      <button data-lg-filter="ALL" class="active">Tất cả</button>
+      <button data-lg-filter="GOOD">Trống thỏa</button>
+      <button data-lg-filter="BAD">Trống không thỏa</button>
+      <button data-lg-filter="OVER">Vượt mức</button>
+      <button data-lg-filter="QTY">Số lượng</button>
+      <button data-lg-filter="CODE">Ô</button>
+      <button id="lgIgnoreQty1Btn">Loại mã SL=1</button>
+      <button id="lgHideDoneBtn">Loại đã làm</button>
+      <button id="lgCompactBtn">Thu gọn danh sách</button>
+      <button id="openCapacityBtn" class="primary">Set kệ</button>
+      <button id="lgExportBtn" class="green">Xuất làm giá</button>
+    </div>
+    <div class="shelfTools">
+      <span class="muted" id="lgFileName">Chưa có file làm giá</span>
+      <span class="spacer"></span>
+      <label>Thứ tự kệ</label><input id="lgRackOrder" class="wideInput" placeholder="B,C,E,F,H,K,J,Z" />
+      <label>Ẩn kệ</label><input id="lgHiddenRacks" class="wideInput" placeholder="VD: A,D" />
+      <button id="lgApplyLayoutBtn">Áp dụng vị trí</button>
+    </div>
+    <div class="stats">
+      <div class="stat">Tổng mã<b id="lgStatCodes">0</b></div>
+      <div class="stat">Tổng tồn<b id="lgStatStock">0</b></div>
+      <div class="stat">Trống thỏa<b id="lgStatGood">0</b></div>
+      <div class="stat">Trống không thỏa<b id="lgStatBad">0</b></div>
+      <div class="stat">Vượt mức<b id="lgStatOver">0</b></div>
+      <div class="stat">Đã làm<b id="lgStatDone">0</b></div>
+      <div class="stat">Đang hiện<b id="lgStatShow">0</b></div>
+      <div class="stat">SL=1<b id="lgStatQty1">0</b></div>
+    </div>
+    <div class="lgTableBox"><table class="lgTable"><thead id="lgHead"></thead><tbody id="lgBody"></tbody></table></div>
   </div>
 </div>
 
 <script>
 /**************************************************************
- * 1) DÁN FIREBASE CONFIG Ở ĐÂY
- * Vào Firebase Console > Project settings > General > Web app.
+ * APP_CONFIG
  **************************************************************/
-const firebaseConfig = {
-  apiKey: "AIzaSyAEVVkiIa-0ondzVesYAu31kBTae4Q1D9U",
-  authDomain: "kklg-2165b.firebaseapp.com",
-  databaseURL: "https://kklg-2165b-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "kklg-2165b",
-  storageBucket: "kklg-2165b.firebasestorage.app",
-  messagingSenderId: "394170018971",
-  appId: "1:394170018971:web:8bd55930397bf93b442a3e"
+const APP_CONFIG = {
+  firebaseConfig: {
+    apiKey: "AIzaSyAEVVkiIa-0ondzVesYAu31kBTae4Q1D9U",
+    authDomain: "kklg-2165b.firebaseapp.com",
+    databaseURL: "https://kklg-2165b-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kklg-2165b",
+    storageBucket: "kklg-2165b.firebasestorage.app",
+    messagingSenderId: "394170018971",
+    appId: "1:394170018971:web:8bd55930397bf93b442a3e"
+  },
+  root: "kiemke_lamgia",
+  defaultTab: "lamgia",
+  pageSize: 300,
+  adminPassword: "@N12345678",
+  staffPasswords: { "An":"111", "Nguyệt":"222", "Thủy":"333", "Huyền":"444" },
+  defaultCapacity: {
+    B:{qty:80,maxCodes:4,order:1,visible:true}, C:{qty:160,maxCodes:4,order:2,visible:true},
+    E:{qty:160,maxCodes:4,order:3,visible:true}, F:{qty:80,maxCodes:4,order:4,visible:true},
+    H:{qty:80,maxCodes:4,order:5,visible:true}, K:{qty:80,maxCodes:4,order:6,visible:true},
+    J:{qty:160,maxCodes:4,order:7,visible:true}, Z:{qty:40,maxCodes:4,order:8,visible:true}
+  }
 };
 
-// Đăng nhập nội bộ.
-// Admin nhập mật khẩu, nhân viên nhấp tên là vào.
-const ADMIN_PASSWORD = "@N12345678";
-const STAFF_NAMES = ["An", "Nguyệt", "Thủy"];
-
-const DB_ROOT = "kiemke_lamgia";
-
+/**************************************************************
+ * GLOBAL STATE
+ **************************************************************/
 let db = null;
 let auth = null;
 let firebaseReady = false;
-let currentUser = null;
-let appUser = null; // {role:'admin'|'staff', name:'...'}
-
+let appUser = null;
 const state = {
-  dateKey: "",
-  rawItems: [],
-  filtered: [],
-  checks: {},
-  page: 1,
-  pageSize: 300,
-  lastFileName: ""
+  activeTab: APP_CONFIG.defaultTab,
+  dateISO: todayISO(),
+  sessions: {kiemke: [], lamgia: []},
+  sessionId: {kiemke: null, lamgia: null},
+  meta: {kiemke: null, lamgia: null},
+  kiemke: {rawItems: [], workingItems: [], checks: {}, filtered: [], page: 1, pageSize: APP_CONFIG.pageSize},
+  lamgia: {rawItems: [], baseItems: [], slots: [], slotStatus: {}, filter: 'ALL', ignoreQty1: false, hideDone: false, compact: false, settings: clone(APP_CONFIG.defaultCapacity), filteredSlots: []}
 };
+const saveTimers = {};
+const $ = (id) => document.getElementById(id);
 
-const el = (id) => document.getElementById(id);
+/**************************************************************
+ * UTILS
+ **************************************************************/
+function clone(x){ return JSON.parse(JSON.stringify(x)); }
+function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function nowStamp(){ return Date.now(); }
+function dateKey(iso=state.dateISO){ return String(iso).replaceAll('-',''); }
+function dateTitle(iso){ const [y,m,d]=String(iso).split('-'); return `Ngày ${d}/${m}/${y}`; }
+function vnNum(n){ if(n===''||n===null||n===undefined||Number.isNaN(n)) return ''; return Number(n).toLocaleString('vi-VN'); }
+function toNum(v){ if(v===''||v===null||v===undefined) return 0; if(typeof v==='number') return Number.isFinite(v)?v:0; const s=String(v).replace(/,/g,'.').replace(/[^0-9.\-]/g,''); const n=Number(s); return Number.isFinite(n)?Math.trunc(n):0; }
+function norm(s){ return String(s??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/\s+/g,' '); }
+function cleanCode(s){ return String(s??'').trim().replace(/\s+/g,' ').toUpperCase(); }
+function escapeHtml(s){ return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/'/g,'&#39;'); }
+function codeKey(s){ return btoa(unescape(encodeURIComponent(String(s)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function setMsg(text, err=false){ $('statusMsg').textContent=text; $('statusMsg').className=err?'msg error':'msg'; }
+function selectedValues(sel){ return [...sel.selectedOptions].map(o=>o.value); }
+function setMultiOptions(sel, values, selected=[]){ sel.innerHTML = values.map(v=>`<option value="${escapeAttr(v)}" ${selected.includes(v)?'selected':''}>${escapeHtml(v)}</option>`).join(''); }
+function pushKey(path){ return db.ref(path).push().key; }
+function sessionLabel(s){ return `${s.date || ''} | ${s.fileName || s.sessionId} | ${s.createdBy || ''} | ${s.count || 0} dòng`; }
+function makeSessionId(tab){ const t=new Date(); const hm=`${String(t.getHours()).padStart(2,'0')}${String(t.getMinutes()).padStart(2,'0')}${String(t.getSeconds()).padStart(2,'0')}`; return `${dateKey()}_${tab}_${hm}_${Math.random().toString(36).slice(2,6)}`; }
 
-function todayISO(){
-  const d = new Date();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-function dateKeyFromISO(iso){ return String(iso || todayISO()).replaceAll('-',''); }
-function titleDate(iso){
-  const [y,m,d] = String(iso).split('-');
-  return `Ngày ${d}/${m}/${y}`;
-}
-function formatNum(n){
-  if(n === "" || n === null || n === undefined || Number.isNaN(n)) return "";
-  return Number(n).toLocaleString('vi-VN');
-}
-function normalizeVN(s){
-  return String(s ?? '').trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/đ/g,'d').replace(/\s+/g,' ');
-}
-function toNumber(v){
-  if(v === null || v === undefined || v === '') return 0;
-  if(typeof v === 'number') return Number.isFinite(v) ? v : 0;
-  const cleaned = String(v).replace(/,/g,'.').replace(/[^0-9.\-]/g,'');
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : 0;
-}
-function parseCode(code, orderIndex=0){
-  const clean = String(code ?? '').trim().replace(/\s+/g,' ').toUpperCase();
-  const m = clean.match(/^([A-Z]+)\s*0*(\d+)/i);
+/**************************************************************
+ * DATA_NORMALIZER
+ **************************************************************/
+function parseProductCode(raw, orderIndex=0){
+  const code = cleanCode(raw);
+  if(!code) return null;
+  const m = code.match(/^([A-Z]+)(\d+)(?:\s+(.+))?$/);
   if(!m) return null;
-  const fullBase = m[0].replace(/\s+/g,'');
   const rack = m[1].toUpperCase();
   const slot = Number(m[2]);
-  const lastDigit = slot % 10;
-  const color = clean.slice(fullBase.length).trim();
-  return { clean, rack, slot, lastDigit, color, hasColor: color.length > 0, orderIndex };
+  const baseCode = `${rack}${String(slot).padStart(m[2].length,'0')}`;
+  const color = cleanCode(m[3] || '');
+  return { code, baseCode, rack, slot, lastDigit: slot % 10, color, hasColor: color.length>0, orderIndex };
 }
-function codeKey(code){
-  return btoa(unescape(encodeURIComponent(String(code))))
-    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-function getCheck(item){ return state.checks[codeKey(item.code)] || {}; }
-function calcRow(item){
-  const c = getCheck(item);
-  const duoiRaw = c.duoi ?? '';
-  const trenRaw = c.tren ?? '';
-  const hasAny = duoiRaw !== '' && duoiRaw !== null && duoiRaw !== undefined || trenRaw !== '' && trenRaw !== null && trenRaw !== undefined;
-  if(!hasAny) return { duoi:'', tren:'', diff:'', actual:'' };
-  const duoi = toNumber(duoiRaw);
-  const tren = toNumber(trenRaw);
-  const actual = duoi + tren;
-  const diff = actual - toNumber(item.stock);
-  return { duoi: duoiRaw, tren: trenRaw, diff, actual };
-}
-function setStatus(text, isError=false){
-  const box = el('configMsg');
-  box.textContent = text;
-  box.className = isError ? 'msg error' : 'msg';
-}
-
-function readSavedAppUser(){
-  try{ return JSON.parse(localStorage.getItem('KKLG_APP_USER') || 'null'); }
-  catch(e){ return null; }
-}
-function saveAppUser(user){
-  appUser = user;
-  if(user) localStorage.setItem('KKLG_APP_USER', JSON.stringify(user));
-  else localStorage.removeItem('KKLG_APP_USER');
-}
-function openLogin(){ el('loginModal').classList.remove('hide'); setTimeout(()=>el('adminPass').focus(), 50); }
-function closeLogin(){ el('loginModal').classList.add('hide'); }
-function applyPermissionUI(){
-  const isAdmin = appUser && appUser.role === 'admin';
-  const excelLabel = document.querySelector('label[for="excelInput"]');
-  if(excelLabel) excelLabel.classList.toggle('hide', !isAdmin);
-  el('exportBtn').classList.toggle('hide', !isAdmin);
-  el('deleteDateBtn').classList.toggle('hide', !isAdmin);
-}
-function afterAppLogin(){
-  if(!appUser) return;
-  const name = appUser.role === 'admin' ? 'Admin' : appUser.name;
-  el('loginStatus').innerHTML = `<span class="roleBadge">${escapeHtml(name)}</span>`;
-  el('openLoginBtn').classList.add('hide');
-  el('logoutBtn').classList.remove('hide');
-  closeLogin();
-  applyPermissionUI();
-  loadSnapshot();
-}
-async function loginAs(user){
-  if(!firebaseReady || !auth){
-    saveAppUser(user);
-    afterAppLogin();
-    return;
-  }
-  try{
-    setStatus('Đang đăng nhập Firebase ẩn danh...');
-    saveAppUser(user);
-    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-    if(!auth.currentUser){
-      await auth.signInAnonymously();
-    }else{
-      currentUser = auth.currentUser;
-      afterAppLogin();
-    }
-  }catch(err){
-    console.error(err);
-    saveAppUser(null);
-    setStatus('Lỗi đăng nhập: ' + (err.code || '') + ' - ' + (err.message || err) + '. Vào Authentication > Sign-in method bật Anonymous.', true);
-    openLogin();
-  }
-}
-function initFirebase(){
-  const isPlaceholder = !firebaseConfig.apiKey || firebaseConfig.apiKey.includes('DAN_') || firebaseConfig.projectId.includes('DAN_');
-  if(isPlaceholder){
-    firebaseReady = false;
-    el('loginStatus').textContent = 'Local test';
-    setStatus('Chưa dán Firebase config. Web vẫn test được trên máy này bằng localStorage.');
-    openLogin();
-    return;
-  }
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.database();
-  auth = firebase.auth();
-  firebaseReady = true;
-  el('openLoginBtn').classList.remove('hide');
-  setStatus('Firebase đã cấu hình. Bản này dùng Admin mật khẩu + nhân viên nhấp chọn, không dùng Google login.');
-
-  appUser = readSavedAppUser();
-  auth.onAuthStateChanged((user) => {
-    currentUser = user;
-    if(user && appUser){
-      afterAppLogin();
-    }else if(appUser && !user){
-      loginAs(appUser);
-    }else{
-      el('loginStatus').textContent = 'Chưa đăng nhập';
-      el('openLoginBtn').classList.remove('hide');
-      el('logoutBtn').classList.add('hide');
-      applyPermissionUI();
-      openLogin();
-    }
+function normalizeRawRows(rows){
+  const out=[];
+  rows.forEach((r,i)=>{
+    const p=parseProductCode(r.code,i);
+    if(!p) return;
+    out.push({...p, stock: toNum(r.stock), name: String(r.name||'').trim(), rawIndex:i, noColorWarn:!p.hasColor && toNum(r.stock)!==0});
   });
-}
-async function firebaseSet(path, value){
-  if(firebaseReady && currentUser){
-    await db.ref(path).set(value);
-  }else{
-    localStorage.setItem('KKDB_' + path, JSON.stringify(value));
-  }
-}
-async function firebaseUpdate(path, value){
-  if(firebaseReady && currentUser){
-    await db.ref(path).update(value);
-  }else{
-    const key = 'KKDB_' + path;
-    const old = JSON.parse(localStorage.getItem(key) || '{}');
-    localStorage.setItem(key, JSON.stringify({...old, ...value}));
-  }
-}
-async function firebaseRemove(path){
-  if(firebaseReady && currentUser){
-    await db.ref(path).remove();
-  }else{
-    localStorage.removeItem('KKDB_' + path);
-  }
-}
-async function firebaseGet(path){
-  if(firebaseReady && currentUser){
-    const snap = await db.ref(path).once('value');
-    return snap.val();
-  }
-  return JSON.parse(localStorage.getItem('KKDB_' + path) || 'null');
-}
-
-function parseExcelRows(rows){
-  let headerIndex = -1, codeCol = 0, stockCol = 1;
-  const maxHeaderScan = Math.min(rows.length, 25);
-  for(let r=0; r<maxHeaderScan; r++){
-    const headers = (rows[r] || []).map(normalizeVN);
-    const c = headers.findIndex(h => h === 'ma' || h === 'ma sp' || h === 'msp' || h.includes('ma san pham'));
-    const t = headers.findIndex(h => h === 'ton' || h === 'ton kho' || h.includes('so luong ton'));
-    if(c >= 0 && t >= 0){ headerIndex = r; codeCol = c; stockCol = t; break; }
-  }
-  const startRow = headerIndex >= 0 ? headerIndex + 1 : 0;
-  const out = [];
-  const seen = new Set();
-  for(let r=startRow; r<rows.length; r++){
-    const row = rows[r] || [];
-    let rawCode = String(row[codeCol] ?? '').trim();
-    if(!rawCode) continue;
-    if(normalizeVN(rawCode) === 'ma') continue;
-    const parsed = parseCode(rawCode, r);
-    if(!parsed || !parsed.hasColor) continue; // Loại mã kệ không có màu: B01, C02...
-    const stock = toNumber(row[stockCol]);
-    const key = parsed.clean;
-    if(seen.has(key)) continue;
-    seen.add(key);
-    out.push({
-      code: parsed.clean,
-      stock,
-      rack: parsed.rack,
-      slot: parsed.slot,
-      lastDigit: parsed.lastDigit,
-      color: parsed.color,
-      orderIndex: parsed.orderIndex
-    });
-  }
   return sortItems(out);
 }
+function makeWorkingItems(raw){
+  return raw.filter(x => x.hasColor || (!x.hasColor && toNum(x.stock)!==0));
+}
 function sortItems(items){
-  return [...items].sort((a,b) =>
-    a.rack.localeCompare(b.rack, 'vi') ||
-    (a.lastDigit - b.lastDigit) ||
-    (a.slot - b.slot) ||
-    (a.orderIndex - b.orderIndex)
+  return [...items].sort((a,b)=>
+    a.rack.localeCompare(b.rack,'vi') ||
+    a.lastDigit - b.lastDigit ||
+    a.slot - b.slot ||
+    a.baseCode.localeCompare(b.baseCode,'vi') ||
+    a.color.localeCompare(b.color,'vi') ||
+    a.orderIndex - b.orderIndex
   );
 }
 
-async function handleExcel(file){
-  if(!file) return;
-  setStatus('Đang đọc file excel...');
-  const data = await file.arrayBuffer();
-  const wb = XLSX.read(data, {type:'array'});
-  const sheet = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
-  const items = parseExcelRows(rows);
-  if(!items.length){
-    setStatus('Không lấy được dòng nào. File phải có cột Mã và Tồn, mã phải có màu như B01 XANH.', true);
-    return;
-  }
-  state.rawItems = items;
-  state.lastFileName = file.name;
-  await saveSnapshot(items, file.name);
-  await loadChecksOnly();
-  updateRackFilter();
-  applyFilters();
-  setStatus(`Đã nhập ${items.length.toLocaleString('vi-VN')} mã có màu từ file ${file.name}. Đã loại mã không có màu như B01.`);
-}
-async function saveSnapshot(items, fileName){
-  const dk = state.dateKey;
-  const base = `${DB_ROOT}/stock/${dk}`;
-  await firebaseSet(`${base}/meta`, {
-    dateKey: dk,
-    fileName,
-    count: items.length,
-    importedAt: new Date().toISOString()
-  });
-  await firebaseRemove(`${base}/items`);
-  const chunkSize = 500;
-  for(let i=0; i<items.length; i += chunkSize){
-    const chunk = {};
-    items.slice(i, i+chunkSize).forEach(item => chunk[codeKey(item.code)] = item);
-    await firebaseUpdate(`${base}/items`, chunk);
-    setStatus(`Đang lưu Firebase/local: ${Math.min(i+chunkSize, items.length).toLocaleString('vi-VN')}/${items.length.toLocaleString('vi-VN')} mã...`);
+/**************************************************************
+ * FIREBASE_SERVICE
+ **************************************************************/
+function initFirebase(){
+  try{
+    firebase.initializeApp(APP_CONFIG.firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.database();
+    firebaseReady = true;
+  }catch(e){
+    setMsg(`Lỗi Firebase init: ${e.message}`, true);
   }
 }
-async function loadChecksOnly(){
-  const checks = await firebaseGet(`${DB_ROOT}/stock/${state.dateKey}/checks`);
-  state.checks = checks || {};
-}
-async function loadSnapshot(){
-  state.dateKey = dateKeyFromISO(el('workDate').value);
-  el('dateTitle').textContent = titleDate(el('workDate').value);
-  const base = `${DB_ROOT}/stock/${state.dateKey}`;
-  setStatus('Đang tải dữ liệu ngày đang chọn...');
-  const [itemsObj, checks, meta] = await Promise.all([
-    firebaseGet(`${base}/items`),
-    firebaseGet(`${base}/checks`),
-    firebaseGet(`${base}/meta`)
-  ]);
-  state.rawItems = sortItems(Object.values(itemsObj || {}));
-  state.checks = checks || {};
-  state.lastFileName = meta?.fileName || '';
-  updateRackFilter();
-  applyFilters();
-  if(state.rawItems.length){
-    setStatus(`Đã tải ngày ${state.dateKey}: ${state.rawItems.length.toLocaleString('vi-VN')} mã.`);
-  }else{
-    setStatus('Ngày này chưa có dữ liệu. Bấm Nhập excel để tạo dữ liệu kiểm kê.');
+async function fbGet(path){ if(!firebaseReady) throw new Error('Firebase chưa sẵn sàng'); const snap=await db.ref(path).get(); return snap.exists()?snap.val():null; }
+async function fbUpdate(path, value){ if(!firebaseReady) throw new Error('Firebase chưa sẵn sàng'); return db.ref(path).update(value); }
+async function fbSet(path, value){ if(!firebaseReady) throw new Error('Firebase chưa sẵn sàng'); return db.ref(path).set(value); }
+async function fbRemove(path){ if(!firebaseReady) throw new Error('Firebase chưa sẵn sàng'); return db.ref(path).remove(); }
+async function fbMultiUpdate(updates){ if(!firebaseReady) throw new Error('Firebase chưa sẵn sàng'); return db.ref().update(updates); }
+async function saveObjectChunked(basePath, obj, chunkSize=500){
+  const entries = Object.entries(obj);
+  for(let i=0;i<entries.length;i+=chunkSize){
+    const update={};
+    entries.slice(i,i+chunkSize).forEach(([k,v])=> update[k]=v);
+    await fbUpdate(basePath, update);
   }
 }
 
-function updateRackFilter(){
-  const select = el('rackFilter');
-  const old = select.value;
-  const racks = [...new Set(state.rawItems.map(x=>x.rack))].sort((a,b)=>a.localeCompare(b,'vi'));
-  select.innerHTML = `<option value="ALL">Tất cả</option><option value="ALL_EXCEPT">Tất cả & loại trừ kệ</option>` +
-    racks.map(r => `<option value="${r}">${r}</option>`).join('');
-  if([...select.options].some(o=>o.value===old)) select.value = old;
-  el('excludeRacks').value = localStorage.getItem('KK_EXCLUDE_RACKS') || '';
+/**************************************************************
+ * AUTH_SERVICE
+ **************************************************************/
+function savedUser(){ try{return JSON.parse(localStorage.getItem('KKLG_USER')||'null')}catch(e){return null} }
+function persistUser(u){ appUser=u; if(u) localStorage.setItem('KKLG_USER',JSON.stringify(u)); else localStorage.removeItem('KKLG_USER'); }
+async function ensureAnonAuth(){
+  if(!firebaseReady) throw new Error('Firebase chưa sẵn sàng');
+  if(auth.currentUser) return auth.currentUser;
+  return auth.signInAnonymously();
 }
-function getExcludeRacks(){
-  return el('excludeRacks').value.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
+async function loginUser(user){
+  try{
+    await ensureAnonAuth();
+    persistUser({...user, loginAt: new Date().toISOString()});
+    closeLogin();
+    applyPermissionUI();
+    setMsg(`Đã đăng nhập: ${user.name} (${user.role==='admin'?'Admin':'Nhân viên'}).`);
+    await loadSettings();
+    await loadSessions();
+  }catch(e){
+    setMsg(`Lỗi đăng nhập: ${e.code || ''} - ${e.message}. Kiểm tra Authentication > Sign-in method đã bật Anonymous.`, true);
+    openLogin();
+  }
 }
-function applyFilters(){
-  const rack = el('rackFilter').value;
-  const excludes = getExcludeRacks();
-  const op = el('stockOp').value;
-  const rawVal = el('stockVal').value;
-  const hasStockFilter = op && rawVal !== '';
-  const stockVal = toNumber(rawVal);
-  let rows = state.rawItems.filter(item => {
-    let okRack = true;
-    if(rack === 'ALL') okRack = true;
-    else if(rack === 'ALL_EXCEPT') okRack = !excludes.includes(item.rack);
-    else okRack = item.rack === rack;
-    if(!okRack) return false;
-    if(!hasStockFilter) return true;
-    const s = toNumber(item.stock);
-    if(op === '>') return s > stockVal;
-    if(op === '>=') return s >= stockVal;
-    if(op === '<') return s < stockVal;
-    if(op === '<=') return s <= stockVal;
-    if(op === '=') return s === stockVal;
+function isAdmin(){ return appUser && appUser.role==='admin'; }
+function canEdit(){ return !!appUser; }
+function applyPermissionUI(){
+  const logged=!!appUser;
+  $('loginStatus').innerHTML = logged ? `<b>${escapeHtml(appUser.name)}</b> - ${appUser.role==='admin'?'Admin':'NV'}` : 'Chưa đăng nhập';
+  $('openLoginBtn').classList.toggle('hidden', logged);
+  $('logoutBtn').classList.toggle('hidden', !logged);
+  $('uploadLabel').classList.toggle('hidden', !isAdmin());
+  $('deleteSessionBtn').classList.toggle('hidden', !isAdmin());
+  $('kkExportBtn').classList.toggle('hidden', !isAdmin());
+  $('openCapacityBtn').classList.toggle('hidden', !isAdmin());
+}
+function openLogin(){ $('loginModal').classList.remove('hidden'); setTimeout(()=>$('adminPass').focus(),50); }
+function closeLogin(){ $('loginModal').classList.add('hidden'); }
+
+/**************************************************************
+ * EXCEL_PARSER
+ **************************************************************/
+async function readExcelFile(file){
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type:'array'});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+  return parseAoaToRows(aoa);
+}
+function parseAoaToRows(aoa){
+  const wide = parseWideLayout(aoa);
+  if(wide.length >= 5) return wide;
+  return parseSimpleTable(aoa);
+}
+function parseSimpleTable(aoa){
+  const codeKeys = ['ma','ma sp','ma san pham','sku','code','product code'];
+  const stockKeys = ['ton','ton kho','sl','so luong','quantity','qty'];
+  const nameKeys = ['ten','ten sp','ten san pham','ten hang','san pham','product name','name'];
+  for(let r=0;r<Math.min(15,aoa.length);r++){
+    const heads = aoa[r].map(x=>norm(x));
+    let codeCol=-1, stockCol=-1, nameCol=-1;
+    heads.forEach((h,i)=>{
+      if(codeCol<0 && codeKeys.some(k=>h===k || h.includes(k))) codeCol=i;
+      if(stockCol<0 && stockKeys.some(k=>h===k || h.includes(k))) stockCol=i;
+      if(nameCol<0 && nameKeys.some(k=>h===k || h.includes(k))) nameCol=i;
+    });
+    if(codeCol>=0 && stockCol>=0){
+      const rows=[];
+      for(let i=r+1;i<aoa.length;i++){
+        rows.push({code: aoa[i][codeCol], stock: aoa[i][stockCol], name: nameCol>=0 ? aoa[i][nameCol] : ''});
+      }
+      return rows;
+    }
+  }
+  // fallback: tìm cột có nhiều mã nhất và cột số kế bên
+  let best={col:-1,count:0};
+  const maxCol = Math.max(...aoa.slice(0,50).map(r=>r.length),0);
+  for(let c=0;c<maxCol;c++){
+    let count=0;
+    for(let r=0;r<Math.min(200,aoa.length);r++) if(parseProductCode(aoa[r][c])) count++;
+    if(count>best.count) best={col:c,count};
+  }
+  if(best.col>=0){
+    const rows=[];
+    const stockCol=best.col+1;
+    for(let r=0;r<aoa.length;r++) rows.push({code:aoa[r][best.col], stock:aoa[r][stockCol], name:''});
+    return rows;
+  }
+  return [];
+}
+function parseWideLayout(aoa){
+  const pairs=[];
+  for(let r=0;r<Math.min(20,aoa.length);r++){
+    for(let c=0;c<(aoa[r]||[]).length-1;c++){
+      const shelf=cleanCode(aoa[r][c]);
+      const next=norm(aoa[r][c+1]);
+      if(/^[A-Z]+$/.test(shelf) && next.includes('ton')) pairs.push({row:r, codeCol:c, stockCol:c+1});
+    }
+    if(pairs.length>=2){
+      const start=r+1;
+      const rows=[];
+      for(let rr=start;rr<aoa.length;rr++){
+        pairs.forEach(p=> rows.push({code:aoa[rr][p.codeCol], stock:aoa[rr][p.stockCol], name:''}));
+      }
+      return rows;
+    }
+  }
+  return [];
+}
+
+/**************************************************************
+ * SESSION_SERVICE
+ **************************************************************/
+function activeSessionId(){ return state.sessionId[state.activeTab]; }
+function activeTabName(){ return state.activeTab==='kiemke'?'KIỂM KÊ':'LÀM GIÁ'; }
+async function createSession(tab, fileName, rawItems, workingCount){
+  const sid=makeSessionId(tab);
+  const meta={sessionId:sid, tab, date:state.dateISO, fileName, createdAt:nowStamp(), createdBy:appUser?.name||'Admin', count:rawItems.length, workingCount, status:'working', locked:false};
+  const updates={};
+  updates[`${APP_CONFIG.root}/${tab}Sessions/${sid}`]=meta;
+  updates[`${APP_CONFIG.root}/uploadList/${tab}/${state.dateISO}/${sid}`]=meta;
+  await fbMultiUpdate(updates);
+  state.sessionId[tab]=sid;
+  state.meta[tab]=meta;
+  return sid;
+}
+async function loadSessions(){
+  if(!appUser) return;
+  state.dateISO = $('workDate').value || todayISO();
+  $('dateTitle').textContent = dateTitle(state.dateISO);
+  const tab=state.activeTab;
+  const obj = await fbGet(`${APP_CONFIG.root}/uploadList/${tab}/${state.dateISO}`) || {};
+  state.sessions[tab] = Object.values(obj).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  renderSessionSelect();
+}
+function renderSessionSelect(){
+  const arr=state.sessions[state.activeTab] || [];
+  $('sessionSelect').innerHTML = arr.length ? arr.map(s=>`<option value="${escapeAttr(s.sessionId)}">${escapeHtml(sessionLabel(s))}</option>`).join('') : `<option value="">Chưa có file ${activeTabName()} trong ngày</option>`;
+  const current=state.sessionId[state.activeTab];
+  if(current && arr.some(s=>s.sessionId===current)) $('sessionSelect').value=current;
+  else if(arr[0]) { $('sessionSelect').value=arr[0].sessionId; state.sessionId[state.activeTab]=arr[0].sessionId; state.meta[state.activeTab]=arr[0]; }
+}
+async function loadSelectedSession(){
+  const sid=$('sessionSelect').value;
+  if(!sid){ setMsg(`Chưa có file ${activeTabName()} để mở.`, true); return; }
+  state.sessionId[state.activeTab]=sid;
+  if(state.activeTab==='kiemke') await loadKiemKeSession(sid);
+  else await loadLamGiaSession(sid);
+}
+async function deleteSelectedSession(){
+  if(!isAdmin()) return alert('Chỉ Admin được xóa file.');
+  const sid=$('sessionSelect').value;
+  if(!sid) return;
+  if(!confirm(`Xóa toàn bộ file ${activeTabName()} đang chọn?\n${sid}`)) return;
+  const tab=state.activeTab;
+  const date=state.dateISO;
+  const updates={};
+  updates[`${APP_CONFIG.root}/${tab}Sessions/${sid}`]=null;
+  updates[`${APP_CONFIG.root}/uploadList/${tab}/${date}/${sid}`]=null;
+  updates[`${APP_CONFIG.root}/${tab}/${sid}`]=null;
+  updates[`${APP_CONFIG.root}/reports/${tab}/${sid}`]=null;
+  updates[`${APP_CONFIG.root}/audit/${sid}`]=null;
+  await fbMultiUpdate(updates);
+  setMsg(`Đã xóa file ${activeTabName()} ${sid}.`);
+  if(tab==='kiemke') resetKiemKe(); else resetLamGia();
+  await loadSessions();
+}
+
+/**************************************************************
+ * KIEMKE_SERVICE
+ **************************************************************/
+function resetKiemKe(){ state.kiemke={rawItems:[],workingItems:[],checks:{},filtered:[],page:1,pageSize:APP_CONFIG.pageSize}; renderKiemKeAll(); }
+async function saveKiemKeUpload(fileName, rawItems){
+  const working=makeWorkingItems(rawItems);
+  const sid=await createSession('kiemke', fileName, rawItems, working.length);
+  const rawObj={}, workObj={};
+  rawItems.forEach(x=>rawObj[codeKey(x.code)] = x);
+  working.forEach(x=>workObj[codeKey(x.code)] = x);
+  await saveObjectChunked(`${APP_CONFIG.root}/kiemke/${sid}/stockRaw`, rawObj);
+  await saveObjectChunked(`${APP_CONFIG.root}/kiemke/${sid}/stockWorking`, workObj);
+  await fbSet(`${APP_CONFIG.root}/kiemke/${sid}/meta`, state.meta.kiemke);
+  state.kiemke.rawItems=rawItems; state.kiemke.workingItems=working; state.kiemke.checks={}; state.kiemke.page=1;
+  updateKiemKeRackFilters();
+  setMsg(`Đã up Excel KIỂM KÊ: ${working.length.toLocaleString('vi-VN')} mã làm việc / ${rawItems.length.toLocaleString('vi-VN')} dòng gốc.`);
+  await loadSessions();
+  renderKiemKeAll();
+}
+async function loadKiemKeSession(sid){
+  setMsg('Đang tải dữ liệu KIỂM KÊ...');
+  const [raw, work, checks, meta] = await Promise.all([
+    fbGet(`${APP_CONFIG.root}/kiemke/${sid}/stockRaw`),
+    fbGet(`${APP_CONFIG.root}/kiemke/${sid}/stockWorking`),
+    fbGet(`${APP_CONFIG.root}/kiemke/${sid}/checkItems`),
+    fbGet(`${APP_CONFIG.root}/kiemke/${sid}/meta`)
+  ]);
+  state.kiemke.rawItems=sortItems(Object.values(raw||{}));
+  state.kiemke.workingItems=sortItems(Object.values(work||{}));
+  state.kiemke.checks=checks||{};
+  state.meta.kiemke=meta||state.sessions.kiemke.find(x=>x.sessionId===sid)||null;
+  updateKiemKeRackFilters();
+  applyKiemKeFilters();
+  setMsg(`Đã mở KIỂM KÊ: ${state.kiemke.workingItems.length.toLocaleString('vi-VN')} mã.`);
+}
+function kkCheck(item){ return state.kiemke.checks[codeKey(item.code)] || {}; }
+function sideDone(c, side){ const q=toNum(c[`${side}Qty`]); return !!c[`${side}DK`] || q>0; }
+function sideVal(c, side){ return c[`${side}DK`] ? 0 : toNum(c[`${side}Qty`]); }
+function kkCalc(item){
+  const c=kkCheck(item);
+  const duoiDone=sideDone(c,'duoi'), trenDone=sideDone(c,'tren');
+  if(!duoiDone || !trenDone) return {duoiDone,trenDone,actual:'',diff:'',complete:false,reprint:false};
+  const actual=sideVal(c,'duoi') + sideVal(c,'tren');
+  const diff=actual - toNum(item.stock);
+  const reprint=sideVal(c,'tren')===0 && sideVal(c,'duoi')>0;
+  return {duoiDone,trenDone,actual,diff,complete:true,reprint};
+}
+async function saveKiemKeField(code, patch, action='edit_check'){
+  const sid=state.sessionId.kiemke;
+  if(!sid) return;
+  const key=codeKey(code);
+  const old=state.kiemke.checks[key] || {};
+  const next={...old,...patch, updatedAt:nowStamp(), updatedBy:appUser?.name||''};
+  state.kiemke.checks[key]=next;
+  const hKey=pushKey(`${APP_CONFIG.root}/kiemke/${sid}/history/${key}`);
+  const aKey=pushKey(`${APP_CONFIG.root}/audit/${sid}`);
+  const hist={time:nowStamp(), user:appUser?.name||'', action, ma:code, before:old, after:next};
+  const updates={};
+  updates[`${APP_CONFIG.root}/kiemke/${sid}/checkItems/${key}`]=next;
+  updates[`${APP_CONFIG.root}/kiemke/${sid}/history/${key}/${hKey}`]=hist;
+  updates[`${APP_CONFIG.root}/audit/${sid}/${aKey}`]=hist;
+  await fbMultiUpdate(updates);
+}
+function scheduleKiemKeSave(code, patch, action){
+  const key=codeKey(code);
+  clearTimeout(saveTimers[`kk_${key}`]);
+  saveTimers[`kk_${key}`]=setTimeout(()=>saveKiemKeField(code, patch, action).catch(e=>setMsg(`Lỗi lưu kiểm kê: ${e.message}`,true)), 350);
+}
+async function applyDKToFiltered(side){
+  if(!canEdit()) return alert('Chưa đăng nhập.');
+  const rows=state.kiemke.filtered;
+  if(!rows.length) return alert('Không có dòng đang lọc.');
+  if(!confirm(`Áp dụng ĐK ${side==='duoi'?'Dưới':'Trên'} cho ${rows.length.toLocaleString('vi-VN')} dòng đang lọc?`)) return;
+  const sid=state.sessionId.kiemke;
+  const updates={};
+  const time=nowStamp();
+  rows.forEach(item=>{
+    const key=codeKey(item.code);
+    const old=state.kiemke.checks[key]||{};
+    const patch = side==='duoi' ? {duoiDK:true, duoiQty:''} : {trenDK:true, trenQty:''};
+    const next={...old,...patch,updatedAt:time,updatedBy:appUser?.name||''};
+    state.kiemke.checks[key]=next;
+    updates[`${APP_CONFIG.root}/kiemke/${sid}/checkItems/${key}`]=next;
+  });
+  await fbMultiUpdate(updates);
+  renderKiemKeAll();
+  setMsg(`Đã áp dụng ĐK ${side==='duoi'?'Dưới':'Trên'} cho danh sách đang lọc.`);
+}
+
+/**************************************************************
+ * LAMGIA_SERVICE
+ **************************************************************/
+function resetLamGia(){ state.lamgia.rawItems=[]; state.lamgia.baseItems=[]; state.lamgia.slots=[]; state.lamgia.slotStatus={}; renderLamGiaAll(); }
+async function saveLamGiaUpload(fileName, rawItems){
+  const sid=await createSession('lamgia', fileName, rawItems, rawItems.length);
+  const rawObj={}; rawItems.forEach(x=> rawObj[codeKey(x.code)] = x);
+  const baseItems=buildBaseItems(rawItems);
+  const baseObj={}; baseItems.forEach(x=> baseObj[codeKey(x.baseCode)] = x);
+  await saveObjectChunked(`${APP_CONFIG.root}/lamgia/${sid}/stockRaw`, rawObj);
+  await saveObjectChunked(`${APP_CONFIG.root}/lamgia/${sid}/priceWorking`, baseObj);
+  await fbSet(`${APP_CONFIG.root}/lamgia/${sid}/meta`, state.meta.lamgia);
+  state.lamgia.rawItems=rawItems; state.lamgia.baseItems=baseItems; state.lamgia.slotStatus={};
+  rebuildLamGiaSlots();
+  setMsg(`Đã up Excel LÀM GIÁ: ${baseItems.length.toLocaleString('vi-VN')} mã gốc / ${rawItems.length.toLocaleString('vi-VN')} dòng.`);
+  await loadSessions();
+  renderLamGiaAll();
+}
+async function loadLamGiaSession(sid){
+  setMsg('Đang tải dữ liệu LÀM GIÁ...');
+  const [raw, base, slotStatus, meta] = await Promise.all([
+    fbGet(`${APP_CONFIG.root}/lamgia/${sid}/stockRaw`),
+    fbGet(`${APP_CONFIG.root}/lamgia/${sid}/priceWorking`),
+    fbGet(`${APP_CONFIG.root}/lamgia/${sid}/slotStatus`),
+    fbGet(`${APP_CONFIG.root}/lamgia/${sid}/meta`)
+  ]);
+  state.lamgia.rawItems=sortItems(Object.values(raw||{}));
+  state.lamgia.baseItems=sortItems(Object.values(base||{}));
+  if(!state.lamgia.baseItems.length && state.lamgia.rawItems.length) state.lamgia.baseItems=buildBaseItems(state.lamgia.rawItems);
+  state.lamgia.slotStatus=slotStatus||{};
+  state.meta.lamgia=meta||state.sessions.lamgia.find(x=>x.sessionId===sid)||null;
+  rebuildLamGiaSlots();
+  renderLamGiaAll();
+  setMsg(`Đã mở LÀM GIÁ: ${state.lamgia.baseItems.length.toLocaleString('vi-VN')} mã gốc.`);
+}
+function buildBaseItems(rawItems){
+  const map={};
+  const hasColorBase={};
+  rawItems.forEach(x=>{ if(x.hasColor) hasColorBase[x.baseCode]=true; });
+  rawItems.forEach(x=>{
+    if(!x.hasColor && toNum(x.stock)===0) return;
+    const countInTotal = x.hasColor || (!hasColorBase[x.baseCode] && toNum(x.stock)!==0);
+    if(!map[x.baseCode]) map[x.baseCode]={code:x.baseCode, baseCode:x.baseCode, rack:x.rack, slot:x.slot, lastDigit:x.lastDigit, stock:0, displayStock:0, colors:[], name:x.name||'', noColorWarn:false};
+    map[x.baseCode].displayStock += toNum(x.stock);
+    if(countInTotal) map[x.baseCode].stock += toNum(x.stock);
+    if(x.hasColor) map[x.baseCode].colors.push({code:x.code,color:x.color,stock:x.stock});
+    else if(toNum(x.stock)!==0) map[x.baseCode].noColorWarn=true;
+  });
+  return sortItems(Object.values(map));
+}
+function rebuildLamGiaSlots(){
+  const groups={};
+  state.lamgia.baseItems.forEach(item=>{
+    const k=`${item.rack}_${item.lastDigit}`;
+    if(!groups[k]) groups[k]={rack:item.rack,lastDigit:item.lastDigit,items:[]};
+    groups[k].items.push(item);
+  });
+  state.lamgia.slots=Object.values(groups).map(g=>{
+    g.items=sortItems(g.items);
+    const status=calcSlotStatus(g);
+    return {...g,...status};
+  }).sort((a,b)=>a.rack.localeCompare(b.rack,'vi') || a.lastDigit-b.lastDigit);
+}
+function capForRack(rack){ return state.lamgia.settings[rack] || {qty:80,maxCodes:4,order:999,visible:true}; }
+function calcSlotStatus(slot){
+  const cap=capForRack(slot.rack);
+  const compareItems = state.lamgia.ignoreQty1 ? slot.items.filter(x=>toNum(x.stock)!==1) : slot.items;
+  const totalQty = slot.items.reduce((s,x)=>s+toNum(x.stock),0);
+  const compareQty = compareItems.reduce((s,x)=>s+toNum(x.stock),0);
+  const compareCodes = compareItems.length;
+  const qty1Count = slot.items.filter(x=>toNum(x.stock)===1).length;
+  const remainQty = toNum(cap.qty) - compareQty;
+  const remainCodes = toNum(cap.maxCodes) - compareCodes;
+  let statusType='FULL', statusText='Đủ';
+  if(remainQty < 0){ statusType='OVER'; statusText=`Vượt(${Math.abs(remainQty)})(${compareCodes})`; }
+  else if(remainQty > 0 && remainCodes > 0){ statusType='GOOD'; statusText=`Trống(${remainQty})(${compareCodes})`; }
+  else if(remainQty > 0 || remainCodes > 0){ statusType='BAD'; statusText=`Trống(${Math.max(0,remainQty)})(${compareCodes})`; }
+  const lastItem=slot.items[slot.items.length-1] || null;
+  const nextCode=lastItem ? `${slot.rack}${String(lastItem.slot+10).padStart(String(lastItem.slot).length,'0')}` : `${slot.rack}${slot.lastDigit}`;
+  const done=!!state.lamgia.slotStatus[`${slot.rack}_${slot.lastDigit}`]?.done;
+  return {capQty:toNum(cap.qty), maxCodes:toNum(cap.maxCodes), totalQty, compareQty, compareCodes, qty1Count, remainQty, remainCodes, statusType, statusText, lastItem, nextCode, done};
+}
+async function saveLamGiaDone(slot, done){
+  const sid=state.sessionId.lamgia;
+  if(!sid) return;
+  const key=`${slot.rack}_${slot.lastDigit}`;
+  const val={rack:slot.rack,lastDigit:slot.lastDigit,done,doneBy:appUser?.name||'',doneAt:nowStamp()};
+  state.lamgia.slotStatus[key]=val;
+  await fbSet(`${APP_CONFIG.root}/lamgia/${sid}/slotStatus/${key}`, val);
+  rebuildLamGiaSlots(); renderLamGiaAll();
+}
+
+/**************************************************************
+ * FILTER_SERVICE
+ **************************************************************/
+function updateKiemKeRackFilters(){
+  const racks=[...new Set(state.kiemke.workingItems.map(x=>x.rack))].sort((a,b)=>a.localeCompare(b,'vi'));
+  setMultiOptions($('kkRackInclude'), racks, []);
+  setMultiOptions($('kkRackExclude'), racks, []);
+}
+function applyKiemKeFilters(){
+  const include=selectedValues($('kkRackInclude'));
+  const exclude=selectedValues($('kkRackExclude'));
+  const op=$('kkStockOp').value;
+  const valRaw=$('kkStockVal').value;
+  const val=toNum(valRaw);
+  const search=norm($('kkSearch').value);
+  const status=$('kkViewMode').value==='TEM' ? 'REPRINT' : $('kkStatusFilter').value;
+  let arr=state.kiemke.workingItems.filter(item=>{
+    if(include.length && !include.includes(item.rack)) return false;
+    if(exclude.includes(item.rack)) return false;
+    const st=toNum(item.stock);
+    if(op==='>' && !(st>val)) return false;
+    if(op==='>=' && !(st>=val)) return false;
+    if(op==='<' && !(st<val)) return false;
+    if(op==='<=' && !(st<=val)) return false;
+    if(op==='=' && !(st===val)) return false;
+    if(op==='NEG' && !(st<0)) return false;
+    if(op==='NOT0' && !(st!==0)) return false;
+    if(search){
+      const hay=norm(`${item.code} ${item.name} ${item.color} ${item.rack}`);
+      if(!hay.includes(search)) return false;
+    }
+    return kkStatusMatch(item,status);
+  });
+  state.kiemke.filtered=arr;
+  state.kiemke.page=1;
+  renderKiemKeAll(false);
+}
+function kkStatusMatch(item,status){
+  const c=kkCheck(item), calc=kkCalc(item);
+  const any=sideDone(c,'duoi')||sideDone(c,'tren');
+  if(status==='ALL') return true;
+  if(status==='NONE') return !any;
+  if(status==='DONE_DUOI') return sideDone(c,'duoi');
+  if(status==='NOT_DUOI') return !sideDone(c,'duoi');
+  if(status==='DONE_TREN') return sideDone(c,'tren');
+  if(status==='NOT_TREN') return !sideDone(c,'tren');
+  if(status==='DONE_BOTH') return calc.complete;
+  if(status==='NOT_BOTH') return !calc.complete;
+  if(status==='NEG') return calc.complete && calc.diff<0;
+  if(status==='POS') return calc.complete && calc.diff>0;
+  if(status==='REPRINT') return calc.reprint;
+  if(status==='NOT_PRINTED') return calc.reprint && !c.temPrinted;
+  if(status==='NO_COLOR') return !item.hasColor;
+  return true;
+}
+function applyLamGiaFilters(){
+  rebuildLamGiaSlots();
+  const filter=state.lamgia.filter;
+  let slots=state.lamgia.slots.filter(slot=>{
+    const cap=capForRack(slot.rack);
+    if(cap.visible===false) return false;
+    if(state.lamgia.hideDone && slot.done) return false;
+    if(filter==='GOOD') return slot.statusType==='GOOD';
+    if(filter==='BAD') return slot.statusType==='BAD';
+    if(filter==='OVER') return slot.statusType==='OVER';
+    if(filter==='QTY') return slot.remainQty>0;
+    if(filter==='CODE') return slot.remainCodes>0;
     return true;
   });
-  state.filtered = rows;
-  state.page = 1;
-  renderAll();
+  state.lamgia.filteredSlots=slots;
 }
-function renderAll(){
-  renderStockList();
-  renderCheckList();
-  renderStats();
+
+/**************************************************************
+ * RENDER_SERVICE - KIEMKE
+ **************************************************************/
+function renderKiemKeAll(reapply=true){ if(reapply) applyKiemKeFilters(); renderStockPreview(); renderKiemKeTable(); renderKiemKeStats(); }
+function renderStockPreview(){
+  const meta=state.meta.kiemke;
+  $('kkFileName').textContent=meta?.fileName || 'Chưa có file';
+  $('kkRawInfo').textContent=`Gốc ${state.kiemke.rawItems.length.toLocaleString('vi-VN')} | Làm việc ${state.kiemke.workingItems.length.toLocaleString('vi-VN')}`;
+  const rows=state.kiemke.workingItems.slice(0,700);
+  $('stockBody').innerHTML = rows.map(x=>`<tr><td>${escapeHtml(x.code)}${x.noColorWarn?'<span class="warnText">Không màu</span>':''}</td><td>${vnNum(x.stock)}</td></tr>`).join('') + (state.kiemke.workingItems.length>700?`<tr><td colspan="2" class="muted">Preview 700 dòng đầu.</td></tr>`:'');
 }
-function renderStockList(){
-  el('fileName').textContent = state.lastFileName || 'Chưa nhập file';
-  el('importInfo').textContent = `${state.rawItems.length.toLocaleString('vi-VN')} mã có màu`;
-  const maxShow = Math.min(state.rawItems.length, 600);
-  el('stockBody').innerHTML = state.rawItems.slice(0, maxShow).map(item =>
-    `<tr><td>${escapeHtml(item.code)}</td><td>${formatNum(item.stock)}</td></tr>`
-  ).join('') + (state.rawItems.length > maxShow ? `<tr><td colspan="2" class="muted">Chỉ preview ${maxShow} dòng đầu để không lag.</td></tr>` : '');
+function renderKiemKeTable(){
+  const mode=$('kkViewMode').value;
+  if(mode==='TEM') return renderTemTable();
+  if(mode==='DUOI') $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th>Dưới</th><th>Ghi chú</th></tr>`;
+  else if(mode==='TREN') $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th>Trên</th><th>Ghi chú</th></tr>`;
+  else $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th>Dưới</th><th>Trên</th><th>Chênh lệch</th><th>SL Thực tế</th><th>Ghi chú</th><th>Lịch sử</th></tr>`;
+  const pageSize=state.kiemke.pageSize;
+  const totalPages=Math.max(1,Math.ceil(state.kiemke.filtered.length/pageSize));
+  if(state.kiemke.page>totalPages) state.kiemke.page=totalPages;
+  const start=(state.kiemke.page-1)*pageSize;
+  const rows=state.kiemke.filtered.slice(start,start+pageSize);
+  $('kkBody').innerHTML=rows.map((item,idx)=>rowHtmlKiemKe(item,start+idx+1,mode)).join('');
+  $('kkPageInfo').textContent=`Trang ${state.kiemke.page}/${totalPages} - ${state.kiemke.filtered.length.toLocaleString('vi-VN')} dòng`;
+  $('kkPrevBtn').disabled=state.kiemke.page<=1; $('kkNextBtn').disabled=state.kiemke.page>=totalPages;
 }
-function renderCheckList(){
-  const pageSize = state.pageSize;
-  const totalPages = Math.max(1, Math.ceil(state.filtered.length / pageSize));
-  if(state.page > totalPages) state.page = totalPages;
-  const start = (state.page - 1) * pageSize;
-  const rows = state.filtered.slice(start, start + pageSize);
-  el('checkBody').innerHTML = rows.map((item, idx) => {
-    const stt = start + idx + 1;
-    const c = getCheck(item);
-    const calc = calcRow(item);
-    const diffClass = calc.diff === '' ? 'blankActual' : calc.diff < 0 ? 'neg' : calc.diff > 0 ? 'pos' : '';
-    const actualClass = calc.actual === '' ? 'blankActual' : '';
-    return `<tr data-code="${escapeAttr(item.code)}">
-      <td>${stt}</td>
-      <td>${escapeHtml(item.code)}</td>
-      <td>${formatNum(item.stock)}</td>
-      <td><input data-field="duoi" type="number" value="${escapeAttr(c.duoi ?? '')}" /></td>
-      <td><input data-field="tren" type="number" value="${escapeAttr(c.tren ?? '')}" /></td>
-      <td class="diffCell ${diffClass}">${formatNum(calc.diff)}</td>
-      <td class="actualCell ${actualClass}">${formatNum(calc.actual)}</td>
-    </tr>`;
+function codeCell(item){ return `<td class="codeCell">${escapeHtml(item.code)}${item.noColorWarn?'<span class="warnText">Không màu</span>':''}${item.name?`<div class="nameLine">${escapeHtml(item.name)}</div>`:''}</td>`; }
+function qtyControl(item, side, c){
+  const dk=!!c[`${side}DK`]; const qty=c[`${side}Qty`]??'';
+  return `<div class="qtyBox"><input data-code="${escapeAttr(item.code)}" data-side="${side}" data-kind="qty" type="number" value="${escapeAttr(qty)}" ${dk?'disabled':''}/><button data-code="${escapeAttr(item.code)}" data-side="${side}" data-kind="dk" class="dkBtn ${dk?'on':''}">ĐK</button></div>`;
+}
+function rowHtmlKiemKe(item,stt,mode){
+  const c=kkCheck(item), calc=kkCalc(item);
+  const diffClass=calc.diff===''?'blank':calc.diff<0?'neg':calc.diff>0?'pos':'';
+  const note=`<input class="noteInput" data-code="${escapeAttr(item.code)}" data-kind="note" value="${escapeAttr(c.note||'')}" />`;
+  if(mode==='DUOI') return `<tr><td>${stt}</td>${codeCell(item)}<td>${vnNum(item.stock)}</td><td>${qtyControl(item,'duoi',c)}</td><td>${note}</td></tr>`;
+  if(mode==='TREN') return `<tr><td>${stt}</td>${codeCell(item)}<td>${vnNum(item.stock)}</td><td>${qtyControl(item,'tren',c)}</td><td>${note}</td></tr>`;
+  return `<tr><td>${stt}</td>${codeCell(item)}<td>${vnNum(item.stock)}</td><td>${qtyControl(item,'duoi',c)}</td><td>${qtyControl(item,'tren',c)}</td><td class="${diffClass}">${calc.complete?vnNum(calc.diff):'<span class="blank">Chưa đủ</span>'}</td><td>${calc.complete?vnNum(calc.actual):''}</td><td>${note}</td><td><button data-code="${escapeAttr(item.code)}" data-kind="history">Xem</button></td></tr>`;
+}
+function renderTemTable(){
+  $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th>Đã in</th><th>Ghi chú</th></tr>`;
+  const rows=state.kiemke.filtered;
+  $('kkBody').innerHTML=rows.map((item,idx)=>{
+    const c=kkCheck(item);
+    const printed=!!c.temPrinted;
+    return `<tr class="${printed?'printed':''}"><td>${idx+1}</td>${codeCell(item)}<td>${vnNum(item.stock)}</td><td><input type="checkbox" data-code="${escapeAttr(item.code)}" data-kind="printed" ${printed?'checked':''}/></td><td><input class="noteInput" data-code="${escapeAttr(item.code)}" data-kind="note" value="${escapeAttr(c.note||'')}" /></td></tr>`;
   }).join('');
-  el('pageInfo').textContent = `Trang ${state.page}/${totalPages} - ${state.filtered.length.toLocaleString('vi-VN')} dòng`;
-  el('prevPageBtn').disabled = state.page <= 1;
-  el('nextPageBtn').disabled = state.page >= totalPages;
+  $('kkPageInfo').textContent=`Chế độ in lại tem - ${rows.length.toLocaleString('vi-VN')} dòng`;
+  $('kkPrevBtn').disabled=true; $('kkNextBtn').disabled=true;
 }
-function renderStats(){
-  let counted = 0, neg = 0, pos = 0;
-  state.filtered.forEach(item => {
-    const calc = calcRow(item);
-    if(calc.actual !== ''){
-      counted++;
-      if(calc.diff < 0) neg++;
-      if(calc.diff > 0) pos++;
-    }
+function renderKiemKeStats(){
+  const rawTotal=state.kiemke.rawItems.reduce((s,x)=>s+toNum(x.stock),0);
+  let done=0,neg=0,pos=0,reprint=0,printed=0,notPrinted=0;
+  state.kiemke.workingItems.forEach(item=>{
+    const calc=kkCalc(item), c=kkCheck(item);
+    if(calc.complete){ done++; if(calc.diff<0) neg++; if(calc.diff>0) pos++; }
+    if(calc.reprint){ reprint++; if(c.temPrinted) printed++; else notPrinted++; }
   });
-  el('statTotal').textContent = state.rawItems.length.toLocaleString('vi-VN');
-  el('statFiltered').textContent = state.filtered.length.toLocaleString('vi-VN');
-  el('statCounted').textContent = counted.toLocaleString('vi-VN');
-  el('statNeg').textContent = neg.toLocaleString('vi-VN');
-  el('statPos').textContent = pos.toLocaleString('vi-VN');
+  $('kkStatTotalStock').textContent=vnNum(rawTotal);
+  $('kkStatFiltered').textContent=vnNum(state.kiemke.filtered.length);
+  $('kkStatDone').textContent=vnNum(done);
+  $('kkStatNeg').textContent=vnNum(neg);
+  $('kkStatPos').textContent=vnNum(pos);
+  $('kkStatReprint').textContent=vnNum(reprint);
+  $('kkStatPrinted').textContent=vnNum(printed);
+  $('kkStatNotPrinted').textContent=vnNum(notPrinted);
 }
-function updateOneInput(tr){
-  const code = tr.dataset.code;
-  const item = state.rawItems.find(x=>x.code === code);
-  if(!item) return;
-  const key = codeKey(code);
-  const duoi = tr.querySelector('input[data-field="duoi"]').value;
-  const tren = tr.querySelector('input[data-field="tren"]').value;
-  state.checks[key] = {duoi, tren, updatedAt: new Date().toISOString(), updatedBy: appUser?.name || 'Admin'};
-  const calc = calcRow(item);
-  const diffCell = tr.querySelector('.diffCell');
-  const actualCell = tr.querySelector('.actualCell');
-  diffCell.textContent = formatNum(calc.diff);
-  actualCell.textContent = formatNum(calc.actual);
-  diffCell.className = 'diffCell ' + (calc.diff === '' ? 'blankActual' : calc.diff < 0 ? 'neg' : calc.diff > 0 ? 'pos' : '');
-  actualCell.className = 'actualCell ' + (calc.actual === '' ? 'blankActual' : '');
-  debouncedSaveCheck(key, state.checks[key]);
-  renderStats();
-}
-const saveTimers = {};
-function debouncedSaveCheck(key, val){
-  clearTimeout(saveTimers[key]);
-  saveTimers[key] = setTimeout(async () => {
-    await firebaseUpdate(`${DB_ROOT}/stock/${state.dateKey}/checks`, {[key]: val});
-  }, 350);
-}
-function exportExcel(){
-  if(!state.filtered.length){ alert('Không có dữ liệu để xuất.'); return; }
-  const data = state.filtered.map(item => {
-    const calc = calcRow(item);
-    return [item.code, calc.actual === '' ? '' : Number(calc.actual)];
-  });
-  const blank = data.filter(r => r[1] === '').length;
-  if(blank > 0 && !confirm(`Còn ${blank.toLocaleString('vi-VN')} dòng chưa nhập Dưới/Trên nên SL Thực tế đang trống. Vẫn xuất?`)) return;
-  const aoa = [['Mã','SL Thực tế'], ...data];
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{wch:24},{wch:14}];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Kiem ke');
-  const rack = el('rackFilter').value.replace(/[^A-Z0-9_]/gi,'');
-  XLSX.writeFile(wb, `xuat-kiem-ke-${state.dateKey}-${rack || 'ALL'}.xlsx`);
-}
-async function deleteCurrentDate(){
-  if(!confirm(`Xóa toàn bộ dữ liệu kiểm kê ngày ${state.dateKey}?`)) return;
-  await firebaseRemove(`${DB_ROOT}/stock/${state.dateKey}`);
-  state.rawItems = [];
-  state.filtered = [];
-  state.checks = {};
-  state.lastFileName = '';
-  updateRackFilter();
-  renderAll();
-  setStatus('Đã xóa dữ liệu ngày đang chọn.');
-}
-function escapeHtml(s){
-  return String(s ?? '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
-}
-function escapeAttr(s){ return escapeHtml(s).replace(/'/g,'&#39;'); }
 
+/**************************************************************
+ * RENDER_SERVICE - LAMGIA
+ **************************************************************/
+function renderLamGiaAll(){ applyLamGiaFilters(); renderLamGiaStats(); renderLamGiaTable(); renderLamGiaHeaderInfo(); }
+function renderLamGiaHeaderInfo(){
+  const meta=state.meta.lamgia;
+  $('lgFileName').textContent = meta ? `${meta.fileName} | ${meta.count||0} dòng | ${meta.sessionId}` : 'Chưa có file làm giá';
+  const visible=Object.entries(state.lamgia.settings).filter(([,v])=>v.visible!==false).sort((a,b)=>(a[1].order||999)-(b[1].order||999)).map(([k])=>k);
+  $('lgRackOrder').value = visible.join(',');
+  const hidden=Object.entries(state.lamgia.settings).filter(([,v])=>v.visible===false).map(([k])=>k);
+  $('lgHiddenRacks').value = hidden.join(',');
+}
+function renderLamGiaStats(){
+  const codes=state.lamgia.baseItems.length;
+  const stock=state.lamgia.baseItems.reduce((s,x)=>s+toNum(x.stock),0);
+  const all=state.lamgia.slots;
+  $('lgStatCodes').textContent=vnNum(codes); $('lgStatStock').textContent=vnNum(stock);
+  $('lgStatGood').textContent=vnNum(all.filter(x=>x.statusType==='GOOD').length);
+  $('lgStatBad').textContent=vnNum(all.filter(x=>x.statusType==='BAD').length);
+  $('lgStatOver').textContent=vnNum(all.filter(x=>x.statusType==='OVER').length);
+  $('lgStatDone').textContent=vnNum(all.filter(x=>x.done).length);
+  $('lgStatShow').textContent=vnNum(state.lamgia.filteredSlots.length);
+  $('lgStatQty1').textContent=vnNum(state.lamgia.baseItems.filter(x=>toNum(x.stock)===1).length);
+}
+function renderLamGiaTable(){
+  const slots=state.lamgia.filteredSlots;
+  const rackOrder=getVisibleRackOrder();
+  const byRack={}; rackOrder.forEach(r=>byRack[r]=[]);
+  slots.forEach(slot=>{ if(byRack[slot.rack]) byRack[slot.rack].push(slot); });
+  const rackRows={};
+  rackOrder.forEach(r=>{
+    const rows=[];
+    (byRack[r]||[]).sort((a,b)=>a.lastDigit-b.lastDigit).forEach(slot=>{
+      let items=slot.items;
+      if(state.lamgia.compact) items=slot.lastItem ? [slot.lastItem] : [];
+      items.forEach((it,idx)=>{
+        const isLast = idx===items.length-1;
+        rows.push({item:it, slot, isLast});
+      });
+    });
+    rackRows[r]=rows;
+  });
+  const maxRows=Math.max(1,...rackOrder.map(r=>rackRows[r].length));
+  $('lgHead').innerHTML = `<tr>${rackOrder.map(r=>`<th colspan="4">${escapeHtml(r)}</th>`).join('')}</tr><tr>${rackOrder.map(r=>`<th class="sub">Mã</th><th class="sub">Tồn</th><th class="sub">SL(${vnNum(capForRack(r).qty)})</th><th class="sub">Đã làm</th>`).join('')}</tr>`;
+  const body=[];
+  for(let i=0;i<maxRows;i++){
+    let tds='';
+    rackOrder.forEach(r=>{
+      const row=rackRows[r][i];
+      if(!row){ tds += '<td></td><td></td><td></td><td></td>'; return; }
+      const {item,slot,isLast}=row;
+      const statusClass = slot.statusType==='GOOD'?'stGood':slot.statusType==='BAD'?'stBad':slot.statusType==='OVER'?'stOver':'stFull';
+      const doneClass = slot.done?'lgDoneRow':'';
+      const qtyOneClass = toNum(item.stock)===1?'lgQtyOne':'';
+      tds += `<td class="lgCode ${doneClass}">${escapeHtml(item.baseCode)}${item.noColorWarn?'<span class="warnText">!</span>':''}</td><td class="lgStock ${qtyOneClass}">${vnNum(item.stock)}</td>`;
+      tds += isLast ? `<td class="lgStatus ${statusClass}" title="Gợi ý tiếp: ${escapeAttr(slot.nextCode)}">${escapeHtml(slot.statusText)}</td><td class="lgDoneCell"><input type="checkbox" data-rack="${escapeAttr(slot.rack)}" data-last="${slot.lastDigit}" ${slot.done?'checked':''}/></td>` : `<td></td><td></td>`;
+    });
+    body.push(`<tr>${tds}</tr>`);
+  }
+  $('lgBody').innerHTML=body.join('');
+}
+function getVisibleRackOrder(){
+  const racksInData=[...new Set(state.lamgia.slots.map(x=>x.rack))];
+  racksInData.forEach(r=>{ if(!state.lamgia.settings[r]) state.lamgia.settings[r]={qty:80,maxCodes:4,order:999,visible:true}; });
+  return Object.entries(state.lamgia.settings)
+    .filter(([r,c])=>c.visible!==false && racksInData.includes(r))
+    .sort((a,b)=>(a[1].order||999)-(b[1].order||999) || a[0].localeCompare(b[0],'vi'))
+    .map(([r])=>r);
+}
+
+/**************************************************************
+ * SETTINGS / CAPACITY
+ **************************************************************/
+async function loadSettings(){
+  const remote=await fbGet(`${APP_CONFIG.root}/settings`);
+  if(remote?.shelfCapacity) state.lamgia.settings={...clone(APP_CONFIG.defaultCapacity),...remote.shelfCapacity};
+  else state.lamgia.settings=clone(APP_CONFIG.defaultCapacity);
+  renderCapacityModal();
+}
+function renderCapacityModal(){
+  const racks=[...new Set([...Object.keys(state.lamgia.settings), ...state.lamgia.baseItems.map(x=>x.rack)])].sort((a,b)=>a.localeCompare(b,'vi'));
+  $('capacityBody').innerHTML = racks.map((r,idx)=>{
+    const c=state.lamgia.settings[r]||{qty:80,maxCodes:4,order:idx+1,visible:true};
+    return `<tr><td><b>${escapeHtml(r)}</b></td><td><input data-rack="${r}" data-cap="qty" type="number" value="${c.qty}"></td><td><input data-rack="${r}" data-cap="maxCodes" type="number" value="${c.maxCodes}"></td><td><input data-rack="${r}" data-cap="order" type="number" value="${c.order||idx+1}"></td><td><input data-rack="${r}" data-cap="visible" type="checkbox" ${c.visible!==false?'checked':''}></td></tr>`;
+  }).join('');
+}
+async function saveCapacitySettings(){
+  const settings={};
+  $('capacityBody').querySelectorAll('tr').forEach(tr=>{
+    const rack=tr.querySelector('[data-rack]').dataset.rack;
+    settings[rack]={
+      qty:toNum(tr.querySelector('[data-cap="qty"]').value),
+      maxCodes:toNum(tr.querySelector('[data-cap="maxCodes"]').value),
+      order:toNum(tr.querySelector('[data-cap="order"]').value),
+      visible:tr.querySelector('[data-cap="visible"]').checked
+    };
+  });
+  state.lamgia.settings=settings;
+  await fbSet(`${APP_CONFIG.root}/settings/shelfCapacity`, settings);
+  $('capacityModal').classList.add('hidden');
+  renderLamGiaAll();
+  setMsg('Đã lưu set kệ chứa đồ.');
+}
+function applyRackLayoutInputs(){
+  const order=$('lgRackOrder').value.split(',').map(x=>cleanCode(x)).filter(Boolean);
+  const hidden=$('lgHiddenRacks').value.split(',').map(x=>cleanCode(x)).filter(Boolean);
+  const all=[...new Set([...Object.keys(state.lamgia.settings), ...state.lamgia.baseItems.map(x=>x.rack), ...order, ...hidden])];
+  all.forEach((r,idx)=>{
+    if(!state.lamgia.settings[r]) state.lamgia.settings[r]={qty:80,maxCodes:4,order:999,visible:true};
+    state.lamgia.settings[r].visible = !hidden.includes(r);
+    const pos=order.indexOf(r);
+    if(pos>=0) state.lamgia.settings[r].order=pos+1;
+  });
+  renderLamGiaAll();
+}
+
+/**************************************************************
+ * HISTORY_SERVICE
+ **************************************************************/
+async function showItemHistory(code){
+  const sid=state.sessionId.kiemke;
+  if(!sid) return;
+  $('historyTitle').textContent=`Lịch sử: ${code}`;
+  $('historyBody').innerHTML='Đang tải...';
+  $('historyModal').classList.remove('hidden');
+  const obj=await fbGet(`${APP_CONFIG.root}/kiemke/${sid}/history/${codeKey(code)}`) || {};
+  const arr=Object.values(obj).sort((a,b)=>(b.time||0)-(a.time||0));
+  if(!arr.length){ $('historyBody').innerHTML='<div class="muted">Chưa có lịch sử.</div>'; return; }
+  $('historyBody').innerHTML=`<table><thead><tr><th>Thời gian</th><th>Người</th><th>Thao tác</th><th>Trước</th><th>Sau</th></tr></thead><tbody>${arr.map(h=>`<tr><td>${new Date(h.time).toLocaleString('vi-VN')}</td><td>${escapeHtml(h.user)}</td><td>${escapeHtml(h.action)}</td><td><pre>${escapeHtml(JSON.stringify(h.before,null,1))}</pre></td><td><pre>${escapeHtml(JSON.stringify(h.after,null,1))}</pre></td></tr>`).join('')}</tbody></table>`;
+}
+
+/**************************************************************
+ * EXPORT_SERVICE
+ **************************************************************/
+function exportKiemKe(){
+  if(!isAdmin()) return alert('Chỉ Admin được xuất Excel.');
+  const data=state.kiemke.filtered.map(item=>{ const calc=kkCalc(item); return [item.code, calc.complete?calc.actual:'']; });
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([['Mã','SL Thực tế'],...data]);
+  ws['!cols']=[{wch:24},{wch:14}]; XLSX.utils.book_append_sheet(wb,ws,'Kiem ke');
+  XLSX.writeFile(wb,`kiem_ke_${state.dateISO}_${state.sessionId.kiemke||''}.xlsx`);
+}
+function exportLamGia(){
+  if(!isAdmin()) return alert('Chỉ Admin được xuất Excel.');
+  const rows=[];
+  state.lamgia.filteredSlots.forEach(slot=>{
+    slot.items.forEach(it=>rows.push([slot.rack,slot.lastDigit,it.baseCode,it.stock,slot.capQty,slot.statusText,slot.done?'Đã làm':'']));
+  });
+  const ws=XLSX.utils.aoa_to_sheet([['Kệ','Số cuối','Mã','Tồn','SL set','Trạng thái','Đã làm'],...rows]);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Lam gia');
+  XLSX.writeFile(wb,`lam_gia_${state.dateISO}_${state.sessionId.lamgia||''}.xlsx`);
+}
+
+/**************************************************************
+ * UI_EVENTS
+ **************************************************************/
 function bindEvents(){
-  el('excelInput').addEventListener('change', e => handleExcel(e.target.files[0]));
-  el('loadDateBtn').addEventListener('click', loadSnapshot);
-  el('rackFilter').addEventListener('change', applyFilters);
-  el('stockOp').addEventListener('change', applyFilters);
-  el('stockVal').addEventListener('input', applyFilters);
-  el('excludeRacks').addEventListener('input', () => {
-    localStorage.setItem('KK_EXCLUDE_RACKS', el('excludeRacks').value);
-    if(el('rackFilter').value === 'ALL_EXCEPT') applyFilters();
+  $('workDate').value=state.dateISO; $('dateTitle').textContent=dateTitle(state.dateISO);
+  document.querySelectorAll('.tabBtn').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
+  $('openLoginBtn').addEventListener('click', openLogin);
+  $('adminLoginBtn').addEventListener('click',()=>{ const pass=$('adminPass').value; if(pass!==APP_CONFIG.adminPassword){setMsg('Sai mật khẩu Admin.',true); return;} loginUser({role:'admin', name:'Admin'}); });
+  $('adminPass').addEventListener('keydown',e=>{if(e.key==='Enter')$('adminLoginBtn').click();});
+  $('staffGrid').innerHTML=Object.keys(APP_CONFIG.staffPasswords).map(n=>`<button data-staff="${escapeAttr(n)}">${escapeHtml(n)}</button>`).join('');
+  $('staffGrid').addEventListener('click',e=>{
+    const btn=e.target.closest('[data-staff]'); if(!btn) return;
+    const name=btn.dataset.staff, pass=$('staffPass').value;
+    if(pass!==APP_CONFIG.staffPasswords[name]){ setMsg(`Sai mật khẩu nhân viên ${name}.`,true); $('staffPass').focus(); return; }
+    loginUser({role:'staff', name});
   });
-  el('clearFilterBtn').addEventListener('click', () => {
-    el('rackFilter').value = 'ALL';
-    el('stockOp').value = '';
-    el('stockVal').value = '';
-    applyFilters();
+  $('logoutBtn').addEventListener('click',async()=>{ persistUser(null); if(auth) await auth.signOut(); applyPermissionUI(); resetKiemKe(); resetLamGia(); openLogin(); setMsg('Đã thoát.'); });
+  $('loadSessionsBtn').addEventListener('click',loadSessions);
+  $('loadSessionBtn').addEventListener('click',loadSelectedSession);
+  $('deleteSessionBtn').addEventListener('click',deleteSelectedSession);
+  $('workDate').addEventListener('change',()=>{state.dateISO=$('workDate').value; $('dateTitle').textContent=dateTitle(state.dateISO); loadSessions();});
+  $('excelInput').addEventListener('change',async e=>{
+    const file=e.target.files[0]; if(!file) return; if(!isAdmin()) return alert('Chỉ Admin được up Excel.');
+    try{ setMsg(`Đang đọc Excel ${file.name}...`); const rows=await readExcelFile(file); const raw=normalizeRawRows(rows); if(!raw.length) throw new Error('Không tìm thấy cột Mã/Tồn hoặc dữ liệu mã hợp lệ.'); if(state.activeTab==='kiemke') await saveKiemKeUpload(file.name,raw); else await saveLamGiaUpload(file.name,raw); e.target.value=''; }
+    catch(err){ setMsg(`Lỗi nhập Excel: ${err.message}`,true); }
   });
-  el('exportBtn').addEventListener('click', exportExcel);
-  el('deleteDateBtn').addEventListener('click', deleteCurrentDate);
-  el('prevPageBtn').addEventListener('click', () => { state.page--; renderCheckList(); });
-  el('nextPageBtn').addEventListener('click', () => { state.page++; renderCheckList(); });
-  el('pageSize').addEventListener('change', () => { state.pageSize = Number(el('pageSize').value); state.page = 1; renderCheckList(); });
-  el('checkBody').addEventListener('input', e => {
-    if(e.target.matches('input')) updateOneInput(e.target.closest('tr'));
-  });
-  el('openLoginBtn').addEventListener('click', openLogin);
-  el('adminLoginBtn').addEventListener('click', () => {
-    const pass = el('adminPass').value;
-    if(pass !== ADMIN_PASSWORD){
-      setStatus('Sai mật khẩu Admin.', true);
-      el('adminPass').select();
-      return;
+
+  ['kkRackInclude','kkRackExclude','kkStockOp','kkStockVal','kkSearch','kkStatusFilter','kkViewMode'].forEach(id=>$(id).addEventListener(id.includes('Search')||id.includes('Val')?'input':'change',applyKiemKeFilters));
+  $('kkClearFilterBtn').addEventListener('click',()=>{ ['kkRackInclude','kkRackExclude'].forEach(id=>[...$(id).options].forEach(o=>o.selected=false)); $('kkStockOp').value=''; $('kkStockVal').value=''; $('kkSearch').value=''; $('kkStatusFilter').value='ALL'; applyKiemKeFilters(); });
+  $('kkApplyDKDuoiBtn').addEventListener('click',()=>applyDKToFiltered('duoi'));
+  $('kkApplyDKTrenBtn').addEventListener('click',()=>applyDKToFiltered('tren'));
+  $('kkExportBtn').addEventListener('click',exportKiemKe);
+  $('kkPrevBtn').addEventListener('click',()=>{state.kiemke.page--;renderKiemKeTable();});
+  $('kkNextBtn').addEventListener('click',()=>{state.kiemke.page++;renderKiemKeTable();});
+  $('kkPageSize').addEventListener('change',()=>{state.kiemke.pageSize=Number($('kkPageSize').value);state.kiemke.page=1;renderKiemKeTable();});
+  $('toggleStockBtn').addEventListener('click',()=>$('stockPanel').classList.toggle('leftPanelMobileHide'));
+  $('kkBody').addEventListener('input',handleKiemKeInput);
+  $('kkBody').addEventListener('click',handleKiemKeClick);
+  $('closeHistoryBtn').addEventListener('click',()=>$('historyModal').classList.add('hidden'));
+
+  document.querySelectorAll('[data-lg-filter]').forEach(btn=>btn.addEventListener('click',()=>{ document.querySelectorAll('[data-lg-filter]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); state.lamgia.filter=btn.dataset.lgFilter; renderLamGiaAll(); }));
+  $('lgIgnoreQty1Btn').addEventListener('click',()=>{ state.lamgia.ignoreQty1=!state.lamgia.ignoreQty1; $('lgIgnoreQty1Btn').classList.toggle('active',state.lamgia.ignoreQty1); renderLamGiaAll(); });
+  $('lgHideDoneBtn').addEventListener('click',()=>{ state.lamgia.hideDone=!state.lamgia.hideDone; $('lgHideDoneBtn').classList.toggle('active',state.lamgia.hideDone); renderLamGiaAll(); });
+  $('lgCompactBtn').addEventListener('click',()=>{ state.lamgia.compact=!state.lamgia.compact; $('lgCompactBtn').classList.toggle('active',state.lamgia.compact); renderLamGiaAll(); });
+  $('lgApplyLayoutBtn').addEventListener('click',applyRackLayoutInputs);
+  $('openCapacityBtn').addEventListener('click',()=>{renderCapacityModal(); $('capacityModal').classList.remove('hidden');});
+  $('closeCapacityBtn').addEventListener('click',()=>$('capacityModal').classList.add('hidden'));
+  $('saveCapacityBtn').addEventListener('click',saveCapacitySettings);
+  $('lgExportBtn').addEventListener('click',exportLamGia);
+  $('lgBody').addEventListener('change',async e=>{
+    if(e.target.matches('input[type="checkbox"][data-rack]')){
+      const slot=state.lamgia.slots.find(s=>s.rack===e.target.dataset.rack && String(s.lastDigit)===String(e.target.dataset.last));
+      if(slot) await saveLamGiaDone(slot,e.target.checked);
     }
-    loginAs({role:'admin', name:'Admin', loginAt:new Date().toISOString()});
-  });
-  el('adminPass').addEventListener('keydown', e => {
-    if(e.key === 'Enter') el('adminLoginBtn').click();
-  });
-  document.querySelectorAll('[data-staff]').forEach(btn => {
-    btn.addEventListener('click', () => loginAs({role:'staff', name:btn.dataset.staff, loginAt:new Date().toISOString()}));
-  });
-  el('logoutBtn').addEventListener('click', async () => {
-    saveAppUser(null);
-    currentUser = null;
-    if(auth) await auth.signOut();
-    state.rawItems = [];
-    state.filtered = [];
-    state.checks = {};
-    state.lastFileName = '';
-    renderAll();
-    applyPermissionUI();
-    openLogin();
-    setStatus('Đã thoát. Chọn Admin hoặc nhân viên để vào lại.');
   });
 }
+function handleKiemKeInput(e){
+  const t=e.target;
+  if(!t.dataset.code || !canEdit()) return;
+  const code=t.dataset.code;
+  const old=state.kiemke.checks[codeKey(code)]||{};
+  let patch={};
+  if(t.dataset.kind==='qty'){
+    const side=t.dataset.side;
+    let v=t.value;
+    if(toNum(v)===0) v='';
+    patch[`${side}Qty`]=v;
+    if(toNum(v)>0) patch[`${side}DK`]=false;
+  }else if(t.dataset.kind==='note') patch.note=t.value;
+  else if(t.dataset.kind==='printed') patch.temPrinted=t.checked, patch.temPrintedBy=appUser?.name||'', patch.temPrintedAt=nowStamp();
+  state.kiemke.checks[codeKey(code)]={...old,...patch,updatedBy:appUser?.name||'',updatedAt:nowStamp()};
+  scheduleKiemKeSave(code,patch,t.dataset.kind==='note'?'edit_note':'edit_check');
+  renderKiemKeStats();
+}
+function handleKiemKeClick(e){
+  const t=e.target;
+  if(t.dataset.kind==='dk'){
+    const code=t.dataset.code, side=t.dataset.side;
+    const old=state.kiemke.checks[codeKey(code)]||{};
+    const newVal=!old[`${side}DK`];
+    const patch={}; patch[`${side}DK`]=newVal; if(newVal) patch[`${side}Qty`]='';
+    state.kiemke.checks[codeKey(code)]={...old,...patch,updatedBy:appUser?.name||'',updatedAt:nowStamp()};
+    scheduleKiemKeSave(code,patch,'edit_dk');
+    renderKiemKeAll();
+  }
+  if(t.dataset.kind==='history') showItemHistory(t.dataset.code);
+}
+function switchTab(tab){
+  state.activeTab=tab;
+  document.querySelectorAll('.tabBtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  $('kiemkePage').classList.toggle('hidden',tab!=='kiemke');
+  $('lamgiaPage').classList.toggle('hidden',tab!=='lamgia');
+  $('uploadLabel').textContent = tab==='kiemke' ? 'Up Excel KIỂM KÊ' : 'Up Excel LÀM GIÁ';
+  renderSessionSelect();
+  setMsg(`Đang ở tab ${activeTabName()}. Excel up ở tab nào lưu riêng tab đó.`);
+}
 
-function boot(){
-  const iso = todayISO();
-  el('workDate').value = iso;
-  state.dateKey = dateKeyFromISO(iso);
-  el('dateTitle').textContent = titleDate(iso);
+/**************************************************************
+ * BOOT
+ **************************************************************/
+async function boot(){
+  initFirebase();
   bindEvents();
   applyPermissionUI();
-  initFirebase();
-  renderAll();
+  switchTab(APP_CONFIG.defaultTab);
+  const u=savedUser();
+  if(u){ appUser=u; applyPermissionUI(); try{ await ensureAnonAuth(); await loadSettings(); await loadSessions(); }catch(e){ setMsg(`Lỗi khôi phục đăng nhập: ${e.code||''} - ${e.message}`, true); openLogin(); } }
+  else openLogin();
 }
 boot();
 </script>
