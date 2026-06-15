@@ -10,15 +10,15 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box}
-    body{margin:0;font-family:Tahoma,Arial,"Segoe UI",sans-serif;background:#f3f4f6;color:#1f2937;font-size:16px}
+    body{margin:0;font-family:Arial,Helvetica,Tahoma,sans-serif;background:#eef2f5;color:#1f2937;font-size:15px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
     .app{width:100%;max-width:none;margin:0 auto;padding:8px 10px}
     .topbar{display:grid;grid-template-columns:280px 1fr 420px;gap:8px;align-items:center;margin-bottom:8px}
-    .dateBox{background:#fff200;border:1px solid #aaa;text-align:center;font-size:24px;font-weight:900;padding:8px 5px;min-height:46px;border-radius:6px}
+    .dateBox{background:#ffeb3b;border:1px solid #d5c900;text-align:center;font-size:22px;font-weight:700;padding:8px 5px;min-height:46px;border-radius:8px}
     .tabs{display:flex;align-items:center;justify-content:center;gap:16px;background:#fff;border:1px solid #bdbdbd;min-height:46px;border-radius:6px}
-    .tabBtn{border:0;background:transparent;font-size:23px;font-weight:900;cursor:pointer;padding:6px 14px;color:#315c8b}
-    .tabBtn.active{color:#c00000;text-decoration:underline;text-underline-offset:4px}
+    .tabBtn{border:0;background:transparent;font-size:21px;font-weight:700;cursor:pointer;padding:7px 16px;color:#315c8b;border-radius:7px}
+    .tabBtn.active{color:#fff;background:#0b5fa5;text-decoration:none;box-shadow:inset 0 -3px 0 #c1121f}
     .authBox{background:#fff;border:1px solid #bdbdbd;padding:6px 8px;display:flex;gap:6px;align-items:center;justify-content:flex-end;min-height:46px;font-size:14px;border-radius:6px;flex-wrap:wrap}
-    button,.btn{border:1px solid #888;background:#fff;border-radius:4px;padding:6px 9px;cursor:pointer;font-size:14px;font-weight:800;white-space:nowrap}
+    button,.btn{border:1px solid #9ca3af;background:#fff;border-radius:6px;padding:7px 10px;cursor:pointer;font-size:14px;font-weight:650;white-space:nowrap}
     button:hover,.btn:hover{background:#eef7ff}
     button.primary{background:#e6f4ff;border-color:#3483c9;color:#064c83}
     button.danger{background:#fff0f0;border-color:#d33;color:#aa0000}
@@ -37,29 +37,29 @@
     .sessionSelect{min-width:260px;max-width:420px}
     .mainGrid{display:grid;grid-template-columns:360px 1fr;gap:10px}
     .panel{background:#fff;border:1px solid #bbb;min-height:calc(100vh - 170px);overflow:hidden;border-radius:6px}
-    .panelTitle{text-align:center;font-size:22px;font-weight:800;color:#c1121f;padding:8px;border-bottom:1px solid #d1d5db;letter-spacing:0}
+    .panelTitle{text-align:center;font-size:20px;font-weight:700;color:#c1121f;padding:8px;border-bottom:1px solid #d1d5db;letter-spacing:0;background:#fff}
     .leftTools{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:8px;border-bottom:1px solid #ddd;background:#fafafa}
     .stockPreview{height:calc(100vh - 280px);min-height:480px;overflow:auto}
     table{border-collapse:collapse;width:100%}
-    th,td{border:1px solid #8e98a3;padding:4px 5px;line-height:1.2;background:#fff;vertical-align:middle}
-    th{background:#f7f7f7;font-weight:900;text-align:center;position:sticky;top:0;z-index:2}
-    .stockTable th{font-size:22px;background:#fff}
-    .stockTable td{font-size:17px;height:32px;font-weight:500;color:#111827}
+    th,td{border:1px solid #aab2bd;padding:4px 5px;line-height:1.22;background:#fff;vertical-align:middle}
+    th{background:#f3f6fa;font-weight:700;text-align:center;position:sticky;top:0;z-index:2}
+    .stockTable th{font-size:18px;background:#f8fafc;font-weight:700}
+    .stockTable td{font-size:16px;height:31px;font-weight:500;color:#111827}
     .filters{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;padding:10px;border-bottom:1px solid #d8d8d8;background:#fbfbfb}
     .filters label{font-weight:800;margin-top:8px;font-size:15px}
     .stats{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;padding:8px;border-bottom:1px solid #ddd;background:#fff}
-    .stat{border:1px solid #ccc;background:#f8f8f8;text-align:center;padding:6px;font-size:13px;border-radius:6px;min-height:52px;font-weight:700}
-    .stat b{display:block;font-size:24px;color:#004b8d;margin-top:2px}
+    .stat{border:1px solid #d1d5db;background:#ffffff;text-align:center;padding:7px;font-size:13px;border-radius:8px;min-height:52px;font-weight:500}
+    .stat b{display:block;font-size:21px;color:#0b5fa5;margin-top:2px;font-weight:700}
     .tableWrap{height:calc(100vh - 340px);min-height:460px;overflow:auto;background:#fff}
-    .checkTable th{font-size:18px;background:#f1f5fa}
-    .checkTable td{font-size:16px;text-align:center;height:40px;font-weight:500;color:#111827}
-    .checkTable td.codeCell{text-align:left;font-weight:600;min-width:210px;font-size:17px;background:#f8fbff;color:#111827}
+    .checkTable th{font-size:16px;background:#f1f5fa;font-weight:700}
+    .checkTable td{font-size:15px;text-align:center;height:38px;font-weight:400;color:#111827}
+    .checkTable td.codeCell{text-align:left;font-weight:500;min-width:210px;font-size:16px;background:#f8fbff;color:#111827}
     .nameLine{font-size:11px;color:#666;font-weight:400;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .qtyBox{display:flex;gap:5px;justify-content:center;align-items:center}
-    .qtyBox input{width:76px;height:32px;text-align:center;padding:3px;font-size:17px;font-weight:800}
+    .qtyBox input{width:76px;height:32px;text-align:center;padding:3px;font-size:16px;font-weight:600}
     .dkBtn{padding:3px 5px;font-size:12px;min-width:32px;background:#fffbe6}
     .dkBtn.on{background:#ffe900;border-color:#555;color:#000}
-    .noteInput{min-width:170px;width:100%;height:32px;padding:4px 6px;font-size:15px}
+    .noteInput{min-width:170px;width:100%;height:32px;padding:4px 6px;font-size:14px}
     .neg{color:#c00000;font-weight:900}
     .pos{color:#007000;font-weight:900}
     .blank{color:#999;font-size:12px}
@@ -72,12 +72,12 @@
     .lamgiaToolbar input{height:32px}
     .lgTableBox{height:570px;overflow:auto;background:#fff}
     .lgTable{width:max-content;min-width:100%;border-collapse:collapse}
-    .lgTable th{font-size:19px;background:#fff200;top:0;z-index:5;min-width:58px}
-    .lgTable th.sub{background:#f7f7f7;font-size:15px;top:32px;z-index:4}
-    .lgTable td{font-size:18px;height:30px;text-align:center;min-width:58px}
-    .lgCode{font-weight:600;text-align:left!important;min-width:80px!important;background:#eef6ff!important;color:#111827}
+    .lgTable th{font-size:17px;background:#ffeb3b;top:0;z-index:5;min-width:58px;font-weight:700}
+    .lgTable th.sub{background:#f8fafc;font-size:14px;top:32px;z-index:4;font-weight:700}
+    .lgTable td{font-size:15px;height:30px;text-align:center;min-width:58px;font-weight:400}
+    .lgCode{font-weight:500;text-align:left!important;min-width:80px!important;background:#eef6ff!important;color:#111827}
     .lgStock{font-weight:500;min-width:54px!important;color:#111827}
-    .lgStatus{font-size:12px!important;font-weight:700;min-width:84px!important;white-space:nowrap}
+    .lgStatus{font-size:12px!important;font-weight:650;min-width:84px!important;white-space:nowrap}
     .stGood{color:#18794e;background:#edf9f1!important}
     .stBad{color:#1d4ed8;background:#eef4ff!important}
     .stOver{color:#c1121f;background:#fff1f2!important}
@@ -124,9 +124,11 @@
     body.compact-mode .stockPreview{height:calc(100vh - 150px)}
     body.compact-mode .lgTableBox{height:calc(100vh - 170px)}
     .toolbarBtn{font-size:13px;padding:6px 8px}
-    .evenRow td{background:#fffbe8}
+    #floatingCompactBtn{display:none;position:fixed;right:12px;top:10px;z-index:99999;background:#0b5fa5;color:#fff;border:1px solid #0b5fa5;padding:9px 13px;border-radius:7px;box-shadow:0 2px 10px rgba(0,0,0,.25);font-weight:700}
+    body.compact-mode #floatingCompactBtn{display:block!important}
+    .evenRow td{background:#fff9db}
     .evenCell{background:#fffbe8!important}
-    .evenRow td.codeCell{background:#fff7d6}
+    .evenRow td.codeCell{background:#fff3bf}
     .evenRow .duoiCell{background:#eef6ff!important}
     .evenRow .trenCell{background:#fff6df!important}
 
@@ -155,7 +157,7 @@
       .noteInput{min-width:110px}
       .lamgiaToolbar,.shelfTools{gap:4px}
       .lgTableBox{height:calc(100vh - 220px);min-height:430px}
-      .lgTable th{font-size:16px}.lgTable td{font-size:16px}
+      .lgTable th{font-size:15px}.lgTable td{font-size:14px}
       .loginCard{width:100%}
       .staffGrid{grid-template-columns:repeat(2,1fr)}
     }
@@ -178,7 +180,8 @@
     </div>
   </div>
 
-  <div id="statusMsg" class="msg">Bản V6: tối ưu giao diện full màn hình, thêm ẩn header, lọc số cuối 0-9, màu Dưới/Trên dễ nhìn.</div>
+  <div id="statusMsg" class="msg">Bản V9: giao diện gọn dễ thao tác, font đều hơn, ẩn header có nút hiện lại, bỏ ô thứ tự kệ.</div>
+  <button id="floatingCompactBtn" class="hidden">Hiện header</button>
 
   <div id="loginModal" class="loginModal hidden">
     <div class="loginCard">
@@ -316,9 +319,6 @@
     </div>
     <div class="shelfTools">
       <span class="muted" id="lgFileName">Chưa có file làm giá</span>
-      <span class="spacer"></span>
-      <label>Thứ tự kệ</label><input id="lgRackOrder" class="wideInput" placeholder="B,C,E,F,H,K,J,Z" />
-      <button id="lgApplyLayoutBtn">Áp dụng vị trí</button>
     </div>
     <div class="stats">
       <div class="stat">Tổng mã<b id="lgStatCodes">0</b></div>
@@ -1010,7 +1010,7 @@ function renderLamGiaTable(){
       const {item,slot,isLast}=row;
       const statusClass = slot.statusType==='GOOD'?'stGood':slot.statusType==='BAD'?'stBad':slot.statusType==='OVER'?'stOver':'stFull';
       const doneClass = slot.done?'lgDoneRow':'';
-      const qtyOneClass = toNum(item.stock)===1?'lgQtyOne':'';
+      const qtyOneClass = toNum(item.stock)<=1?'lgQtyOne':'';
       const evenCell = item.lastDigit % 2 === 0 ? 'evenCell' : '';
       tds += `<td class="lgCode ${doneClass} ${evenCell}">${escapeHtml(item.baseCode)}${item.noColorWarn?'<span class="warnText">!</span>':''}</td><td class="lgStock ${qtyOneClass} ${evenCell}">${vnNum(item.stock)}</td>`;
       tds += isLast ? `<td class="lgStatus ${statusClass}" title="Gợi ý tiếp: ${escapeAttr(slot.nextCode)}">${escapeHtml(slot.statusText)}</td><td class="lgDoneCell"><input type="checkbox" data-rack="${escapeAttr(slot.rack)}" data-last="${slot.lastDigit}" ${slot.done?'checked':''}/></td>` : `<td></td><td></td>`;
@@ -1127,6 +1127,7 @@ function bindEvents(){
   });
   $('logoutBtn').addEventListener('click',async()=>{ persistUser(null); if(auth) await auth.signOut(); applyPermissionUI(); resetKiemKe(); resetLamGia(); openLogin(); setMsg('Đã thoát.'); });
   $('toggleHeaderBtn').addEventListener('click',toggleCompactMode);
+  $('floatingCompactBtn').addEventListener('click',toggleCompactMode);
   $('fullscreenBtn').addEventListener('click',toggleFullscreen);
   $('loadSessionsBtn').addEventListener('click',loadSessions);
   $('loadSessionBtn').addEventListener('click',loadSelectedSession);
@@ -1157,7 +1158,7 @@ function bindEvents(){
   $('lgIgnoreQty1Btn').addEventListener('click',()=>{ state.lamgia.ignoreQty1=!state.lamgia.ignoreQty1; $('lgIgnoreQty1Btn').classList.toggle('active',state.lamgia.ignoreQty1); renderLamGiaAll(); });
   $('lgHideDoneBtn').addEventListener('click',()=>{ state.lamgia.hideDone=!state.lamgia.hideDone; $('lgHideDoneBtn').classList.toggle('active',state.lamgia.hideDone); renderLamGiaAll(); });
   $('lgCompactBtn').addEventListener('click',()=>{ state.lamgia.compact=!state.lamgia.compact; $('lgCompactBtn').classList.toggle('active',state.lamgia.compact); renderLamGiaAll(); });
-  $('lgApplyLayoutBtn').addEventListener('click',applyRackLayoutInputs);
+  if($('lgApplyLayoutBtn')) $('lgApplyLayoutBtn').addEventListener('click',applyRackLayoutInputs);
   $('openCapacityBtn').addEventListener('click',()=>{renderCapacityModal(); $('capacityModal').classList.remove('hidden');});
   $('closeCapacityBtn').addEventListener('click',()=>$('capacityModal').classList.add('hidden'));
   $('saveCapacityBtn').addEventListener('click',saveCapacitySettings);
@@ -1221,8 +1222,10 @@ function toggleDigitFilter(digit){
 function toggleCompactMode(){
   document.body.classList.toggle('compact-mode');
   const on = document.body.classList.contains('compact-mode');
-  $('toggleHeaderBtn').textContent = on ? 'Hiện header' : 'Ẩn header';
+  $('toggleHeaderBtn').textContent = on ? 'Header đang ẩn' : 'Ẩn header';
   $('toggleHeaderBtn').classList.toggle('compactToggleOn', on);
+  $('floatingCompactBtn').classList.toggle('hidden', !on);
+  $('floatingCompactBtn').textContent = 'Hiện header';
   try{ localStorage.setItem('KKLG_COMPACT', on ? '1':'0'); }catch(e){}
 }
 async function toggleFullscreen(){
