@@ -64,7 +64,7 @@
     .pos{color:#007000;font-weight:900}
     .blank{color:#999;font-size:12px}
     .warnText{color:#cc0000;font-weight:900;font-size:11px;margin-left:4px}
-    .printed{background:#d9d9d9!important;color:#555}.stockDone{color:#d00000!important;font-weight:900!important}.checkTable{margin-bottom:140px}
+    .printed{background:#d9d9d9!important;color:#555}
     .pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px;border-top:1px solid #ddd;background:#fafafa}
 
     .lamgiaWrap{background:#fff;border:1px solid #bbb;min-height:650px;overflow:hidden}
@@ -104,6 +104,30 @@
     .capTable input{width:80px;text-align:center}
     .capTable td,.capTable th{font-size:14px}
 
+
+    /* GIỮ GIAO DIỆN GỐC - BỔ SUNG KIỂM KÊ */
+    .mainGrid.stockHidden{grid-template-columns:1fr!important}
+    .mainGrid.stockHidden #stockPanel{display:none!important}
+    .checkTable td.codeCell{font-size:20px!important;min-width:235px!important;font-weight:800!important}
+    .stockDone{color:#d00000!important;font-weight:900!important}
+    .calcStatus{color:#666;font-size:13px;font-weight:700}
+    .digitFilters{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;padding-top:4px}
+    .digitBtn{min-width:38px;padding:6px 9px;font-size:15px}
+    .digitBtn.on{background:#004b91!important;color:#fff!important;border-color:#004b91!important}
+    .quickBtn{background:#f8fbff;border-color:#9dbbdd;color:#064c83}
+    .quickBtn.active{background:#004b91!important;color:#fff!important;border-color:#004b91!important}
+    .checkTable{margin-bottom:190px}
+    .tableWrap{padding-bottom:120px}
+    @media (max-width:760px){
+      .checkTable td.codeCell{font-size:18px!important;min-width:170px!important}
+      body.compact-mode{overflow:hidden!important;height:100vh}
+      body.compact-mode .stats{display:none!important}
+      body.compact-mode .app{height:100vh;overflow:hidden}
+      body.compact-mode .tableWrap{height:calc(100vh - 125px)!important;min-height:0!important;overflow:auto!important;padding-bottom:220px!important}
+      body.compact-mode .checkTable{margin-bottom:220px!important}
+      body.compact-mode .pager{display:none!important}
+    }
+
     @media (max-width: 760px){
       body{background:#fff}
       .app{padding:4px;max-width:none}
@@ -123,7 +147,7 @@
       .stats{grid-template-columns:repeat(2,1fr)}
       .tableWrap{height:calc(100vh - 360px);min-height:360px}
       .checkTable th,.checkTable td{font-size:14px;padding:4px 3px}
-      .checkTable td.codeCell{min-width:160px;font-size:18px}
+      .checkTable td.codeCell{min-width:130px}
       .qtyBox input{width:58px}
       .noteInput{min-width:110px}
       .lamgiaToolbar,.shelfTools{gap:4px}
@@ -149,7 +173,7 @@
     </div>
   </div>
 
-  <div id="statusMsg" class="msg">Bản V5: tách KIỂM KÊ và LÀM GIÁ riêng, mặc định mở LÀM GIÁ.</div>
+  <div id="statusMsg" class="msg">Bản V14: giữ giao diện gốc, khôi phục lọc số cuối 0-9, sửa kho dưới/trên và nút lọc nhanh.</div>
 
   <div id="loginModal" class="loginModal hidden">
     <div class="loginCard">
@@ -241,8 +265,22 @@
         <button id="kkApplyDKDuoiBtn" class="warn">ĐK Dưới lọc</button>
         <button id="kkApplyDKTrenBtn" class="warn">ĐK Trên lọc</button>
         <button id="kkExportBtn" class="green">Xuất Excel</button>
-        <button type="button" id="kkQuickNotDuoiBtn" class="quickBtn">Dưới chưa làm</button>
-        <button type="button" id="kkQuickNotTrenBtn" class="quickBtn">Trên chưa làm</button>
+        <div class="digitFilters">
+          <label>Số cuối</label>
+          <button type="button" class="digitBtn on" data-digit="ALL">Tất cả</button>
+          <button type="button" class="digitBtn" data-digit="0">0</button>
+          <button type="button" class="digitBtn" data-digit="1">1</button>
+          <button type="button" class="digitBtn" data-digit="2">2</button>
+          <button type="button" class="digitBtn" data-digit="3">3</button>
+          <button type="button" class="digitBtn" data-digit="4">4</button>
+          <button type="button" class="digitBtn" data-digit="5">5</button>
+          <button type="button" class="digitBtn" data-digit="6">6</button>
+          <button type="button" class="digitBtn" data-digit="7">7</button>
+          <button type="button" class="digitBtn" data-digit="8">8</button>
+          <button type="button" class="digitBtn" data-digit="9">9</button>
+          <button type="button" id="kkQuickNotDuoiBtn" class="quickBtn">Dưới chưa làm</button>
+          <button type="button" id="kkQuickNotTrenBtn" class="quickBtn">Trên chưa làm</button>
+        </div>
       </div>
       <div class="stats">
         <div class="stat">Tồn hệ thống<b id="kkStatTotalStock">0</b></div>
@@ -335,7 +373,7 @@ const state = {
   sessions: {kiemke: [], lamgia: []},
   sessionId: {kiemke: null, lamgia: null},
   meta: {kiemke: null, lamgia: null},
-  kiemke: {rawItems: [], workingItems: [], checks: {}, filtered: [], page: 1, pageSize: APP_CONFIG.pageSize},
+  kiemke: {rawItems: [], workingItems: [], checks: {}, filtered: [], page: 1, pageSize: APP_CONFIG.pageSize, digitFilters: []},
   lamgia: {rawItems: [], baseItems: [], slots: [], slotStatus: {}, filter: 'ALL', ignoreQty1: false, hideDone: false, compact: false, settings: clone(APP_CONFIG.defaultCapacity), filteredSlots: []}
 };
 const saveTimers = {};
@@ -598,7 +636,7 @@ async function deleteSelectedSession(){
 /**************************************************************
  * KIEMKE_SERVICE
  **************************************************************/
-function resetKiemKe(){ state.kiemke={rawItems:[],workingItems:[],checks:{},filtered:[],page:1,pageSize:APP_CONFIG.pageSize}; renderKiemKeAll(); }
+function resetKiemKe(){ state.kiemke={rawItems:[],workingItems:[],checks:{},filtered:[],page:1,pageSize:APP_CONFIG.pageSize,digitFilters:[]}; renderKiemKeAll(); updateDigitButtons(); }
 async function saveKiemKeUpload(fileName, rawItems){
   const working=makeWorkingItems(rawItems);
   const sid=await createSession('kiemke', fileName, rawItems, working.length);
@@ -789,15 +827,16 @@ function updateKiemKeRackFilters(){
   setMultiOptions($('kkRackExclude'), racks, []);
 }
 function applyKiemKeFilters(){
-  syncQuickButtons();
   const include=selectedValues($('kkRackInclude'));
   const exclude=selectedValues($('kkRackExclude'));
   const op=$('kkStockOp').value;
   const valRaw=$('kkStockVal').value;
   const val=toNum(valRaw);
   const search=norm($('kkSearch').value);
+  const digits=state.kiemke.digitFilters || [];
   const status=$('kkViewMode').value==='TEM' ? 'REPRINT' : $('kkStatusFilter').value;
   let arr=state.kiemke.workingItems.filter(item=>{
+    if(digits.length && !digits.includes(String(item.lastDigit))) return false;
     if(include.length && !include.includes(item.rack)) return false;
     if(exclude.includes(item.rack)) return false;
     const st=toNum(item.stock);
@@ -868,9 +907,9 @@ function renderKiemKeTable(){
   const mode=$('kkViewMode').value;
   syncQuickButtons();
   if(mode==='TEM') return renderTemTable();
-  if(mode==='DUOI') $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th class="headDuoi">Dưới</th><th>Chênh lệch</th><th>Ghi chú</th></tr>`;
-  else if(mode==='TREN') $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th class="headTren">Trên</th><th>Chênh lệch</th><th>Ghi chú</th></tr>`;
-  else $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th class="headDuoi">Dưới</th><th class="headTren">Trên</th><th>Chênh lệch</th><th>SL Thực tế</th><th>Đã in</th><th>Ghi chú</th><th>Lịch sử</th></tr>`;
+  if(mode==='DUOI') $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th>Dưới</th><th>Chênh lệch</th><th>Ghi chú</th></tr>`;
+  else if(mode==='TREN') $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th>Trên</th><th>Chênh lệch</th><th>Ghi chú</th></tr>`;
+  else $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th>Dưới</th><th>Trên</th><th>Chênh lệch</th><th>SL Thực tế</th><th>Đã in</th><th>Ghi chú</th><th>Lịch sử</th></tr>`;
   const pageSize=state.kiemke.pageSize;
   const totalPages=Math.max(1,Math.ceil(state.kiemke.filtered.length/pageSize));
   if(state.kiemke.page>totalPages) state.kiemke.page=totalPages;
@@ -891,11 +930,11 @@ function rowHtmlKiemKe(item,stt,mode){
   const note=`<input class="noteInput" data-code="${escapeAttr(item.code)}" data-kind="note" value="${escapeAttr(c.note||'')}" />`;
   const rowCls = item.lastDigit % 2 === 0 ? 'evenRow' : '';
   const stockCls = calc.complete ? 'stockDone' : '';
-  const stockTd = `<td class="${stockCls}" style="font-size:18px;font-weight:700">${vnNum(item.stock)}</td>`;
+  const stockTd = `<td class="${stockCls}" data-stock="1">${vnNum(item.stock)}</td>`;
   const diffTd = `<td class="${diffClass}" data-calc="diff">${calc.complete?vnNum(calc.diff):`<span class="calcStatus">${calc.statusText||'Chưa đủ'}</span>`}</td>`;
-  if(mode==='DUOI') return `<tr class="${rowCls}" data-row-key="${codeKey(item.code)}"><td>${stt}</td>${codeCell(item)}${stockTd}<td class="duoiCell">${qtyControl(item,'duoi',c)}</td>${diffTd}<td>${note}</td></tr>`;
-  if(mode==='TREN') return `<tr class="${rowCls}" data-row-key="${codeKey(item.code)}"><td>${stt}</td>${codeCell(item)}${stockTd}<td class="trenCell">${qtyControl(item,'tren',c)}</td>${diffTd}<td>${note}</td></tr>`;
-  return `<tr class="${rowCls}" data-row-key="${codeKey(item.code)}"><td>${stt}</td>${codeCell(item)}${stockTd}<td class="duoiCell">${qtyControl(item,'duoi',c)}</td><td class="trenCell">${qtyControl(item,'tren',c)}</td>${diffTd}<td data-calc="actual">${calc.complete?vnNum(calc.actual):''}</td><td class="printedCell"><input type="checkbox" data-code="${escapeAttr(item.code)}" data-kind="printed" ${c.temPrinted?'checked':''}/></td><td>${note}</td><td><button data-code="${escapeAttr(item.code)}" data-kind="history">Xem</button></td></tr>`;
+  if(mode==='DUOI') return `<tr class="${rowCls}" data-row-key="${codeKey(item.code)}"><td>${stt}</td>${codeCell(item)}${stockTd}<td>${qtyControl(item,'duoi',c)}</td>${diffTd}<td>${note}</td></tr>`;
+  if(mode==='TREN') return `<tr class="${rowCls}" data-row-key="${codeKey(item.code)}"><td>${stt}</td>${codeCell(item)}${stockTd}<td>${qtyControl(item,'tren',c)}</td>${diffTd}<td>${note}</td></tr>`;
+  return `<tr class="${rowCls}" data-row-key="${codeKey(item.code)}"><td>${stt}</td>${codeCell(item)}${stockTd}<td>${qtyControl(item,'duoi',c)}</td><td>${qtyControl(item,'tren',c)}</td>${diffTd}<td data-calc="actual">${calc.complete?vnNum(calc.actual):''}</td><td><input type="checkbox" data-code="${escapeAttr(item.code)}" data-kind="printed" ${c.temPrinted?'checked':''}/></td><td>${note}</td><td><button data-code="${escapeAttr(item.code)}" data-kind="history">Xem</button></td></tr>`;
 }
 function renderTemTable(){
   $('kkHead').innerHTML=`<tr><th>STT</th><th>Mã</th><th>Tồn</th><th>Đã in</th><th>Ghi chú</th></tr>`;
@@ -1107,14 +1146,18 @@ function bindEvents(){
   });
 
   ['kkRackInclude','kkRackExclude','kkStockOp','kkStockVal','kkSearch','kkStatusFilter','kkViewMode'].forEach(id=>$(id).addEventListener(id.includes('Search')||id.includes('Val')?'input':'change',applyKiemKeFilters));
-  $('kkClearFilterBtn').addEventListener('click',()=>{ ['kkRackInclude','kkRackExclude'].forEach(id=>[...$(id).options].forEach(o=>o.selected=false)); $('kkStockOp').value=''; $('kkStockVal').value=''; $('kkSearch').value=''; $('kkStatusFilter').value='ALL'; applyKiemKeFilters(); });
+  $('kkClearFilterBtn').addEventListener('click',()=>{ ['kkRackInclude','kkRackExclude'].forEach(id=>[...$(id).options].forEach(o=>o.selected=false)); $('kkStockOp').value=''; $('kkStockVal').value=''; $('kkSearch').value=''; $('kkStatusFilter').value='ALL'; state.kiemke.digitFilters=[]; updateDigitButtons(); applyKiemKeFilters(); });
   $('kkApplyDKDuoiBtn').addEventListener('click',()=>applyDKToFiltered('duoi'));
   $('kkApplyDKTrenBtn').addEventListener('click',()=>applyDKToFiltered('tren'));
   $('kkExportBtn').addEventListener('click',exportKiemKe);
+  if($('kkQuickNotDuoiBtn')) $('kkQuickNotDuoiBtn').addEventListener('click',()=>toggleQuickStatus('NOT_DUOI'));
+  if($('kkQuickNotTrenBtn')) $('kkQuickNotTrenBtn').addEventListener('click',()=>toggleQuickStatus('NOT_TREN'));
+  document.querySelectorAll('.digitBtn').forEach(btn=>btn.addEventListener('click',()=>toggleDigitFilter(btn.dataset.digit)));
+  if($('toggleStockTopBtn')) $('toggleStockTopBtn').addEventListener('click',toggleStockPanel);
   $('kkPrevBtn').addEventListener('click',()=>{state.kiemke.page--;renderKiemKeTable();});
   $('kkNextBtn').addEventListener('click',()=>{state.kiemke.page++;renderKiemKeTable();});
   $('kkPageSize').addEventListener('change',()=>{state.kiemke.pageSize=Number($('kkPageSize').value);state.kiemke.page=1;renderKiemKeTable();});
-  $('toggleStockBtn').addEventListener('click',toggleStockPanel);$('toggleStockTopBtn').addEventListener('click',toggleStockPanel);
+  $('toggleStockBtn').addEventListener('click',toggleStockPanel);
   $('kkBody').addEventListener('input',handleKiemKeInput);
   $('kkBody').addEventListener('click',handleKiemKeClick);
   $('closeHistoryBtn').addEventListener('click',()=>$('historyModal').classList.add('hidden'));
@@ -1123,7 +1166,7 @@ function bindEvents(){
   $('lgIgnoreQty1Btn').addEventListener('click',()=>{ state.lamgia.ignoreQty1=!state.lamgia.ignoreQty1; $('lgIgnoreQty1Btn').classList.toggle('active',state.lamgia.ignoreQty1); renderLamGiaAll(); });
   $('lgHideDoneBtn').addEventListener('click',()=>{ state.lamgia.hideDone=!state.lamgia.hideDone; $('lgHideDoneBtn').classList.toggle('active',state.lamgia.hideDone); renderLamGiaAll(); });
   $('lgCompactBtn').addEventListener('click',()=>{ state.lamgia.compact=!state.lamgia.compact; $('lgCompactBtn').classList.toggle('active',state.lamgia.compact); renderLamGiaAll(); });
-  $('lgApplyLayoutBtn').addEventListener('click',applyRackLayoutInputs);
+  if($('lgApplyLayoutBtn')) $('lgApplyLayoutBtn').addEventListener('click',applyRackLayoutInputs);
   $('openCapacityBtn').addEventListener('click',()=>{renderCapacityModal(); $('capacityModal').classList.remove('hidden');});
   $('closeCapacityBtn').addEventListener('click',()=>$('capacityModal').classList.add('hidden'));
   $('saveCapacityBtn').addEventListener('click',saveCapacitySettings);
@@ -1134,40 +1177,6 @@ function bindEvents(){
       if(slot) await saveLamGiaDone(slot,e.target.checked);
     }
   });
-}
-function updateRowCalc(code){
-  const key=codeKey(code), row=document.querySelector(`[data-row-key="${CSS.escape(key)}"]`);
-  if(!row) return;
-  const item=state.kiemke.workingItems.find(x=>codeKey(x.code)===key);
-  if(!item) return;
-  const calc=kkCalc(item), d=row.querySelector('[data-calc="diff"]'), a=row.querySelector('[data-calc="actual"]');
-  const stockCell=row.children[2];
-  if(stockCell) stockCell.classList.toggle('stockDone', !!calc.complete);
-  if(d){ d.className=calc.diff===''?'blank':calc.diff<0?'neg':calc.diff>0?'pos':''; d.setAttribute('data-calc','diff'); d.innerHTML=calc.complete?vnNum(calc.diff):`<span class="calcStatus">${calc.statusText}</span>`; }
-  if(a) a.textContent=calc.complete?vnNum(calc.actual):'';
-}
-function toggleStockPanel(){
-  const hidden=$('stockPanel').classList.toggle('leftPanelMobileHide');
-  $('toggleStockTopBtn').textContent=hidden?'Hiện tồn':'Ẩn/Hiện tồn';
-  $('toggleStockBtn').textContent=hidden?'Hiện tồn':'Ẩn/Hiện tồn';
-}
-function toggleQuickStatus(status){
-  $('kkStatusFilter').value = $('kkStatusFilter').value===status ? 'ALL' : status;
-  applyKiemKeFilters();
-  syncQuickButtons();
-}
-function syncQuickButtons(){
-  const mode=$('kkViewMode').value, status=$('kkStatusFilter').value;
-  $('kkQuickNotDuoiBtn').classList.toggle('hidden', mode==='TREN'||mode==='TEM');
-  $('kkQuickNotTrenBtn').classList.toggle('hidden', mode==='DUOI'||mode==='TEM');
-  $('kkQuickNotDuoiBtn').classList.toggle('active', status==='NOT_DUOI');
-  $('kkQuickNotTrenBtn').classList.toggle('active', status==='NOT_TREN');
-}
-function lockMobileZoom(){
-  document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
-  document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
-  document.addEventListener('touchmove',e=>{ if(e.touches && e.touches.length>1) e.preventDefault(); },{passive:false});
-  let lastTouchEnd=0; document.addEventListener('touchend',e=>{ const now=Date.now(); if(now-lastTouchEnd<=300)e.preventDefault(); lastTouchEnd=now; },{passive:false});
 }
 function handleKiemKeInput(e){
   const t=e.target;
@@ -1201,6 +1210,50 @@ function handleKiemKeClick(e){
   }
   if(t.dataset.kind==='history') showItemHistory(t.dataset.code);
 }
+function updateRowCalc(code){
+  const key=codeKey(code), row=document.querySelector(`[data-row-key="${CSS.escape(key)}"]`);
+  if(!row) return;
+  const item=state.kiemke.workingItems.find(x=>codeKey(x.code)===key);
+  if(!item) return;
+  const calc=kkCalc(item), d=row.querySelector('[data-calc="diff"]'), a=row.querySelector('[data-calc="actual"]'), stock=row.querySelector('[data-stock="1"]');
+  if(stock) stock.classList.toggle('stockDone', !!calc.complete);
+  if(d){ d.className=calc.diff===''?'blank':calc.diff<0?'neg':calc.diff>0?'pos':''; d.setAttribute('data-calc','diff'); d.innerHTML=calc.complete?vnNum(calc.diff):`<span class="calcStatus">${calc.statusText||'Chưa đủ'}</span>`; }
+  if(a) a.textContent=calc.complete?vnNum(calc.actual):'';
+}
+function toggleStockPanel(){
+  const hidden=$('kiemkePage').classList.toggle('stockHidden');
+  if($('toggleStockTopBtn')) $('toggleStockTopBtn').textContent=hidden?'Hiện tồn':'Ẩn/Hiện tồn';
+  if($('toggleStockBtn')) $('toggleStockBtn').textContent=hidden?'Hiện tồn':'Ẩn/Hiện tồn';
+}
+function toggleQuickStatus(status){
+  $('kkStatusFilter').value = $('kkStatusFilter').value===status ? 'ALL' : status;
+  applyKiemKeFilters();
+  syncQuickButtons();
+}
+function syncQuickButtons(){
+  const duoi=$('kkQuickNotDuoiBtn'), tren=$('kkQuickNotTrenBtn');
+  if(!duoi || !tren) return;
+  const mode=$('kkViewMode').value, status=$('kkStatusFilter').value;
+  duoi.classList.toggle('hidden', mode==='TREN'||mode==='TEM');
+  tren.classList.toggle('hidden', mode==='DUOI'||mode==='TEM');
+  duoi.classList.toggle('active', status==='NOT_DUOI');
+  tren.classList.toggle('active', status==='NOT_TREN');
+}
+function updateDigitButtons(){
+  const selected=(state.kiemke.digitFilters||[])[0] || 'ALL';
+  document.querySelectorAll('.digitBtn').forEach(btn=>btn.classList.toggle('on', btn.dataset.digit===selected || (selected==='ALL' && btn.dataset.digit==='ALL')));
+}
+function toggleDigitFilter(digit){
+  state.kiemke.digitFilters = digit==='ALL' ? [] : [digit];
+  updateDigitButtons();
+  applyKiemKeFilters();
+}
+function lockMobileZoom(){
+  document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+  document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
+  document.addEventListener('touchmove',e=>{ if(e.touches && e.touches.length>1) e.preventDefault(); },{passive:false});
+  let lastTouchEnd=0; document.addEventListener('touchend',e=>{ const now=Date.now(); if(now-lastTouchEnd<=300)e.preventDefault(); lastTouchEnd=now; },{passive:false});
+}
 function switchTab(tab){
   state.activeTab=tab;
   document.querySelectorAll('.tabBtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
@@ -1217,6 +1270,8 @@ function switchTab(tab){
 async function boot(){
   initFirebase();
   bindEvents();
+  lockMobileZoom();
+  updateDigitButtons();
   applyPermissionUI();
   switchTab(APP_CONFIG.defaultTab);
   const u=savedUser();
