@@ -1,0 +1,97 @@
+name: Codex patch hang tra layout
+
+on:
+  push:
+    paths:
+      - .github/workflows/codex-patch-hangtra-layout-20260707.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Patch return layout and default column widths
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          old = '.returnGrid{display:grid;grid-template-columns:1.02fr 1.22fr .95fr;gap:8px;padding:8px;background:#fff}'
+          new = '.returnGrid{display:grid;grid-template-columns:minmax(430px,.78fr) minmax(720px,1.55fr) minmax(360px,.75fr);gap:8px;padding:8px;background:#fff}'
+          if old in text:
+              text = text.replace(old, new, 1)
+
+          start = text.index('function enableReturnTableResize(){')
+          end = text.index('function renderReturnSystem(){', start)
+          resize_fn = textwrap.dedent(r'''
+              function enableReturnTableResize(){
+                document.querySelectorAll('#hangtraPage .returnSystemTable,#hangtraPage .returnShopTable').forEach(table=>{
+                  const ths=[...table.querySelectorAll('thead th')];
+                  if(!ths.length)return;
+                  const preset=table.classList.contains('returnSystemTable')?[54,185,145,80]:[54,190,150,170,90,80];
+                  let cg=table.querySelector('colgroup');
+                  if(!cg){
+                    cg=document.createElement('colgroup');
+                    ths.forEach((th,idx)=>{const col=document.createElement('col');const measured=Math.round(th.getBoundingClientRect().width||th.offsetWidth||90);col.style.width=Math.max(45,preset[idx]||measured)+'px';cg.appendChild(col)});
+                    table.insertBefore(cg,table.firstChild);
+                  }
+                  const cols=[...cg.children];
+                  table.style.tableLayout='fixed';
+                  table.style.width='max-content';
+                  table.style.minWidth='100%';
+                  ths.forEach((th,idx)=>{
+                    if(!cols[idx])return;
+                    if(!cols[idx].style.width&&preset[idx])cols[idx].style.width=preset[idx]+'px';
+                    th.style.position='sticky';th.style.top='0';th.style.overflow='visible';
+                    if(th.querySelector('.retResizeHandle'))return;
+                    const handle=document.createElement('span');
+                    handle.className='retResizeHandle';
+                    handle.title='Kéo để đổi rộng cột';
+                    th.appendChild(handle);
+                    handle.addEventListener('mousedown',ev=>{
+                      ev.preventDefault();ev.stopPropagation();
+                      const startX=ev.clientX,startW=parseInt(cols[idx].style.width,10)||Math.round(th.getBoundingClientRect().width)||90;
+                      document.body.style.cursor='col-resize';
+                      document.body.style.userSelect='none';
+                      const onMove=e=>{cols[idx].style.width=Math.max(45,startW+e.clientX-startX)+'px'};
+                      const onUp=()=>{document.body.style.cursor='';document.body.style.userSelect='';document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp)};
+                      document.addEventListener('mousemove',onMove);
+                      document.addEventListener('mouseup',onUp);
+                    });
+                  });
+                });
+              }
+          ''').strip() + '\n'
+          text = text[:start] + resize_fn + text[end:]
+
+          required = ['minmax(430px,.78fr) minmax(720px,1.55fr) minmax(360px,.75fr)', "returnSystemTable')?[54,185,145,80]", 'returnShopTable')
+          missing = [s for s in required if s not in text]
+          if missing:
+              raise SystemExit('Patch failed, missing markers: ' + ', '.join(missing))
+          if text == original:
+              print('No index.html changes needed')
+          else:
+              path.write_text(text, encoding='utf-8')
+              print('Patched hang tra layout')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "codex-bot"
+          git config user.email "codex-bot@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "adjust hang tra panel layout"
+            git push
+          fi
