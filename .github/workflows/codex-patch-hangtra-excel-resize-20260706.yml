@@ -1,4 +1,4 @@
-# trigger 2
+# trigger 3
 name: Codex patch hang tra excel resize
 
 on:
@@ -21,6 +21,7 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
+          import textwrap
 
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
@@ -31,94 +32,119 @@ jobs:
               if old in text and new not in text:
                   text = text.replace(old, new, 1)
 
-          replace_once('<button id="retSystemClearBtn" class="danger">Xóa hết</button><span class="retSummarySmall" id="retSystemSummary">0 mã</span>', '<button id="retSystemClearBtn" class="danger">Xóa hết</button><button id="retSystemExportBtn" class="green">Xuất Excel</button><span class="retSummarySmall" id="retSystemSummary">0 mã</span>')
-          replace_once('<button id="retShopClearBtn" class="danger">Xóa hết</button><span class="retSummarySmall" id="retShopSummary">0 mã</span>', '<button id="retShopClearBtn" class="danger">Xóa hết</button><button id="retShopExportBtn" class="green">Xuất Excel</button><span class="retSummarySmall" id="retShopSummary">0 mã</span>')
+          replace_once(
+              '<button id="retSystemClearBtn" class="danger">Xóa hết</button><span class="retSummarySmall" id="retSystemSummary">0 mã</span>',
+              '<button id="retSystemClearBtn" class="danger">Xóa hết</button><button id="retSystemExportBtn" class="green">Xuất Excel</button><span class="retSummarySmall" id="retSystemSummary">0 mã</span>'
+          )
+          replace_once(
+              '<button id="retShopClearBtn" class="danger">Xóa hết</button><span class="retSummarySmall" id="retShopSummary">0 mã</span>',
+              '<button id="retShopClearBtn" class="danger">Xóa hết</button><button id="retShopExportBtn" class="green">Xuất Excel</button><span class="retSummarySmall" id="retShopSummary">0 mã</span>'
+          )
 
-          resize_fn = r'''function enableReturnTableResize(){
-  document.querySelectorAll('#hangtraPage .returnSystemTable,#hangtraPage .returnShopTable').forEach(table=>{
-    const ths=[...table.querySelectorAll('thead th')];
-    if(!ths.length)return;
-    let cg=table.querySelector('colgroup');
-    if(!cg){
-      cg=document.createElement('colgroup');
-      ths.forEach(th=>{const col=document.createElement('col');col.style.width=Math.max(55,Math.round(th.getBoundingClientRect().width||th.offsetWidth||90))+'px';cg.appendChild(col)});
-      table.insertBefore(cg,table.firstChild);
-    }
-    const cols=[...cg.children];
-    table.style.tableLayout='fixed';
-    table.style.width='max-content';
-    table.style.minWidth='100%';
-    ths.forEach((th,idx)=>{
-      if(!cols[idx])return;
-      th.style.position='sticky';th.style.top='0';th.style.overflow='visible';
-      if(th.querySelector('.retResizeHandle'))return;
-      const handle=document.createElement('span');
-      handle.className='retResizeHandle';
-      handle.title='Kéo để đổi rộng cột';
-      th.appendChild(handle);
-      handle.addEventListener('mousedown',ev=>{
-        ev.preventDefault();ev.stopPropagation();
-        const startX=ev.clientX,startW=parseInt(cols[idx].style.width,10)||Math.round(th.getBoundingClientRect().width)||90;
-        document.body.style.cursor='col-resize';
-        document.body.style.userSelect='none';
-        const onMove=e=>{cols[idx].style.width=Math.max(45,startW+e.clientX-startX)+'px'};
-        const onUp=()=>{document.body.style.cursor='';document.body.style.userSelect='';document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp)};
-        document.addEventListener('mousemove',onMove);
-        document.addEventListener('mouseup',onUp);
-      });
-    });
-  });
-}'''
+          resize_fn = textwrap.dedent(r'''
+              function enableReturnTableResize(){
+                document.querySelectorAll('#hangtraPage .returnSystemTable,#hangtraPage .returnShopTable').forEach(table=>{
+                  const ths=[...table.querySelectorAll('thead th')];
+                  if(!ths.length)return;
+                  let cg=table.querySelector('colgroup');
+                  if(!cg){
+                    cg=document.createElement('colgroup');
+                    ths.forEach(th=>{const col=document.createElement('col');col.style.width=Math.max(55,Math.round(th.getBoundingClientRect().width||th.offsetWidth||90))+'px';cg.appendChild(col)});
+                    table.insertBefore(cg,table.firstChild);
+                  }
+                  const cols=[...cg.children];
+                  table.style.tableLayout='fixed';
+                  table.style.width='max-content';
+                  table.style.minWidth='100%';
+                  ths.forEach((th,idx)=>{
+                    if(!cols[idx])return;
+                    th.style.position='sticky';th.style.top='0';th.style.overflow='visible';
+                    if(th.querySelector('.retResizeHandle'))return;
+                    const handle=document.createElement('span');
+                    handle.className='retResizeHandle';
+                    handle.title='Kéo để đổi rộng cột';
+                    th.appendChild(handle);
+                    handle.addEventListener('mousedown',ev=>{
+                      ev.preventDefault();ev.stopPropagation();
+                      const startX=ev.clientX,startW=parseInt(cols[idx].style.width,10)||Math.round(th.getBoundingClientRect().width)||90;
+                      document.body.style.cursor='col-resize';
+                      document.body.style.userSelect='none';
+                      const onMove=e=>{cols[idx].style.width=Math.max(45,startW+e.clientX-startX)+'px'};
+                      const onUp=()=>{document.body.style.cursor='';document.body.style.userSelect='';document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp)};
+                      document.addEventListener('mousemove',onMove);
+                      document.addEventListener('mouseup',onUp);
+                    });
+                  });
+                });
+              }
+          ''').strip()
+
           if 'function enableReturnTableResize(){' in text:
               start = text.index('function enableReturnTableResize(){')
               end = text.index('function renderReturnSystem(){', start)
               text = text[:start] + resize_fn + '\n' + text[end:]
 
-          export_block = r'''
-function retExportFileName(prefix,day=retState.day){const carrier=retCarrierName().replace(/[^\w\-]+/g,'_'),month=String(retState.month||retMonthNow()).replace(/[^0-9\-]/g,'');return `${prefix}_${carrier}_${month}_ngay_${day}.xlsx`}
-function retWriteXlsx(fileName,headers,rows,sheetName='Hang tra'){
-  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
-  ws['!cols']=headers.map((h,i)=>({wch:Math.min(45,Math.max(12,String(h||'').length+4,...rows.slice(0,1000).map(r=>String(r[i]??'').length+2)))}));
-  XLSX.utils.book_append_sheet(wb,ws,sheetName);
-  XLSX.writeFile(wb,fileName);
-}
-function retExportCurrentList(side){
-  if(side==='system'){
-    const rows=retSortedRows(retState.system.filter(retRowMatches));
-    if(!rows.length)return alert('Không có dữ liệu hệ thống để xuất.');
-    retWriteXlsx(retExportFileName('hang_tra_he_thong'),['STT','MVD Hệ Thống','Thời gian','Nguồn','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.source||'',r.createdBy||'']),'He thong');
-    return;
-  }
-  const normal=retSortedRows(retValidShopRows(retState.shop).filter(retRowMatches));
-  const other=retSortedRows(retOtherRows(retState.shop).filter(retRowMatches));
-  const rows=[...normal,...other];
-  if(!rows.length)return alert('Không có dữ liệu SHOP để xuất.');
-  retWriteXlsx(retExportFileName('hang_tra_shop'),['STT','Shop đã nhận','Thời gian','Ghi chú','Loại','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.note||'',r.type==='other'?'Loại Khác':(r.source||''),r.createdBy||'']),'SHOP');
-}
-function retExportMissingRows(day,sysRows,valid,missing,other,status){
-  if(!(missing||[]).length)return alert('Ngày này không có mã thiếu để xuất.');
-  const rows=(missing||[]).map((r,i)=>[i+1,r.mvd||'',day,retCarrierName(),status||'',sysRows.length,valid.length,other.length,retFormatTime(r.createdAt),r.source||'',r.createdBy||'']);
-  retWriteXlsx(retExportFileName('hang_tra_thieu',day),['STT','MVD thiếu trong SHOP','Ngày','ĐVVC','Trạng thái','Hệ thống','SHOP','Loại khác','Thời gian hệ thống','Nguồn','Người tạo'],rows,'Thieu');
-}
-'''
+          export_block = textwrap.dedent(r'''
+              function retExportFileName(prefix,day=retState.day){const carrier=retCarrierName().replace(/[^\w\-]+/g,'_'),month=String(retState.month||retMonthNow()).replace(/[^0-9\-]/g,'');return `${prefix}_${carrier}_${month}_ngay_${day}.xlsx`}
+              function retWriteXlsx(fileName,headers,rows,sheetName='Hang tra'){
+                const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+                ws['!cols']=headers.map((h,i)=>({wch:Math.min(45,Math.max(12,String(h||'').length+4,...rows.slice(0,1000).map(r=>String(r[i]??'').length+2)))}));
+                XLSX.utils.book_append_sheet(wb,ws,sheetName);
+                XLSX.writeFile(wb,fileName);
+              }
+              function retExportCurrentList(side){
+                if(side==='system'){
+                  const rows=retSortedRows(retState.system.filter(retRowMatches));
+                  if(!rows.length)return alert('Không có dữ liệu hệ thống để xuất.');
+                  retWriteXlsx(retExportFileName('hang_tra_he_thong'),['STT','MVD Hệ Thống','Thời gian','Nguồn','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.source||'',r.createdBy||'']),'He thong');
+                  return;
+                }
+                const normal=retSortedRows(retValidShopRows(retState.shop).filter(retRowMatches));
+                const other=retSortedRows(retOtherRows(retState.shop).filter(retRowMatches));
+                const rows=[...normal,...other];
+                if(!rows.length)return alert('Không có dữ liệu SHOP để xuất.');
+                retWriteXlsx(retExportFileName('hang_tra_shop'),['STT','Shop đã nhận','Thời gian','Ghi chú','Loại','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.note||'',r.type==='other'?'Loại Khác':(r.source||''),r.createdBy||'']),'SHOP');
+              }
+              function retExportMissingRows(day,sysRows,valid,missing,other,status){
+                if(!(missing||[]).length)return alert('Ngày này không có mã thiếu để xuất.');
+                const rows=(missing||[]).map((r,i)=>[i+1,r.mvd||'',day,retCarrierName(),status||'',sysRows.length,valid.length,other.length,retFormatTime(r.createdAt),r.source||'',r.createdBy||'']);
+                retWriteXlsx(retExportFileName('hang_tra_thieu',day),['STT','MVD thiếu trong SHOP','Ngày','ĐVVC','Trạng thái','Hệ thống','SHOP','Loại khác','Thời gian hệ thống','Nguồn','Người tạo'],rows,'Thieu');
+              }
+          ''').strip()
+
           if 'function retExportCurrentList(side)' not in text:
               text = text.replace('async function retDeleteRow(side,id){', export_block + '\nasync function retDeleteRow(side,id){', 1)
 
-          replace_once('<div style="margin-top:10px;text-align:right">${actionHtml}</div>', '<div style="margin-top:10px;text-align:right;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button id="retExportMissingDayBtn" class="green" type="button">Xuất Excel thiếu</button>${actionHtml}</div>')
-          replace_once(";$('retDayModal').classList.remove('hidden');const btn=$('retConfirmDayBtn');if(btn)btn.onclick=async()=>{", ";$('retDayModal').classList.remove('hidden');const exportBtn=$('retExportMissingDayBtn');if(exportBtn)exportBtn.onclick=()=>retExportMissingRows(day,sysRows,valid,missing,other,status);const btn=$('retConfirmDayBtn');if(btn)btn.onclick=async()=>{")
+          replace_once(
+              '<div style="margin-top:10px;text-align:right">${actionHtml}</div>',
+              '<div style="margin-top:10px;text-align:right;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button id="retExportMissingDayBtn" class="green" type="button">Xuất Excel thiếu</button>${actionHtml}</div>'
+          )
+          replace_once(
+              ";$('retDayModal').classList.remove('hidden');const btn=$('retConfirmDayBtn');if(btn)btn.onclick=async()=>{",
+              ";$('retDayModal').classList.remove('hidden');const exportBtn=$('retExportMissingDayBtn');if(exportBtn)exportBtn.onclick=()=>retExportMissingRows(day,sysRows,valid,missing,other,status);const btn=$('retConfirmDayBtn');if(btn)btn.onclick=async()=>{"
+          )
 
           direct_old = "$('retSystemClearBtn').addEventListener('click',()=>retClearSide('system'));$('retShopClearBtn').addEventListener('click',()=>retClearSide('shop'));"
           direct_new = "$('retSystemClearBtn').addEventListener('click',()=>retClearSide('system'));$('retShopClearBtn').addEventListener('click',()=>retClearSide('shop'));$('retSystemExportBtn')&&$('retSystemExportBtn').addEventListener('click',()=>retExportCurrentList('system'));$('retShopExportBtn')&&$('retShopExportBtn').addEventListener('click',()=>retExportCurrentList('shop'));"
           if direct_old in text and "retSystemExportBtn')&&$('retSystemExportBtn')" not in text:
               text = text.replace(direct_old, direct_new, 1)
 
-          text = text.replace("const handled=['retCarrierAddBtn','retCarrierEditBtn','retCarrierDeleteBtn','retSearchBtn','retHistoryBtn','retSystemUploadBtn','retShopUploadBtn','retSystemManualBtn','retShopManualBtn','retShopOtherBtn','retSystemClearBtn','retShopClearBtn','retInputCloseBtn','retQuickAddBtn','retBulkSaveBtn','retCameraBtn','retCameraStopBtn','retDayCloseBtn'];", "const handled=['retCarrierAddBtn','retCarrierEditBtn','retCarrierDeleteBtn','retSearchBtn','retHistoryBtn','retSystemUploadBtn','retShopUploadBtn','retSystemManualBtn','retShopManualBtn','retShopOtherBtn','retSystemClearBtn','retShopClearBtn','retSystemExportBtn','retShopExportBtn','retInputCloseBtn','retQuickAddBtn','retBulkSaveBtn','retCameraBtn','retCameraStopBtn','retDayCloseBtn'];", 1)
-          text = text.replace("if(id==='retShopClearBtn')return retClearSide('shop');\n        if(id==='retInputCloseBtn')", "if(id==='retShopClearBtn')return retClearSide('shop');\n        if(id==='retSystemExportBtn')return retExportCurrentList('system');\n        if(id==='retShopExportBtn')return retExportCurrentList('shop');\n        if(id==='retInputCloseBtn')", 1)
+          text = text.replace(
+              "const handled=['retCarrierAddBtn','retCarrierEditBtn','retCarrierDeleteBtn','retSearchBtn','retHistoryBtn','retSystemUploadBtn','retShopUploadBtn','retSystemManualBtn','retShopManualBtn','retShopOtherBtn','retSystemClearBtn','retShopClearBtn','retInputCloseBtn','retQuickAddBtn','retBulkSaveBtn','retCameraBtn','retCameraStopBtn','retDayCloseBtn'];",
+              "const handled=['retCarrierAddBtn','retCarrierEditBtn','retCarrierDeleteBtn','retSearchBtn','retHistoryBtn','retSystemUploadBtn','retShopUploadBtn','retSystemManualBtn','retShopManualBtn','retShopOtherBtn','retSystemClearBtn','retShopClearBtn','retSystemExportBtn','retShopExportBtn','retInputCloseBtn','retQuickAddBtn','retBulkSaveBtn','retCameraBtn','retCameraStopBtn','retDayCloseBtn'];",
+              1
+          )
+          text = text.replace(
+              "if(id==='retShopClearBtn')return retClearSide('shop');\n        if(id==='retInputCloseBtn')",
+              "if(id==='retShopClearBtn')return retClearSide('shop');\n        if(id==='retSystemExportBtn')return retExportCurrentList('system');\n        if(id==='retShopExportBtn')return retExportCurrentList('shop');\n        if(id==='retInputCloseBtn')",
+              1
+          )
 
           required = ['retSystemExportBtn','retShopExportBtn','retExportMissingDayBtn','retExportCurrentList','retExportMissingRows','colgroup','table.style.tableLayout']
           missing = [s for s in required if s not in text]
           if missing:
               raise SystemExit('Patch failed, missing markers: ' + ', '.join(missing))
+
           if text == original:
               print('No index.html changes needed')
           else:
