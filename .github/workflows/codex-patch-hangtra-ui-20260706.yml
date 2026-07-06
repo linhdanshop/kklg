@@ -1,4 +1,4 @@
-name: Codex patch hang tra UI
+name: Codex patch hang tra exports
 
 on:
   push:
@@ -26,31 +26,62 @@ jobs:
           original = text
 
           text = text.replace(
-          "    #hangtraPage .returnActionBtns{gap:0!important;justify-content:center!important}\n    #hangtraPage .returnActionBtns button{padding:3px 6px!important;font-size:13px!important}\n    @media (max-width:760px)",
-          "    #hangtraPage .returnActionBtns{gap:0!important;justify-content:center!important}\n    #hangtraPage .returnActionBtns button{padding:3px 6px!important;font-size:13px!important}\n    #hangtraPage .returnTable th{position:sticky;top:0;overflow:hidden;min-width:46px}\n    #hangtraPage .returnTable{table-layout:auto}\n    .retResizeHandle{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:8}\n    .retResizeHandle:hover{background:rgba(11,95,165,.25)}\n    @media (max-width:760px)"
+          "<button id=\"retSystemClearBtn\" class=\"danger\">Xóa hết</button><span class=\"retSummarySmall\" id=\"retSystemSummary\">0 mã</span>",
+          "<button id=\"retSystemClearBtn\" class=\"danger\">Xóa hết</button><button id=\"retSystemExportBtn\" class=\"green\">Xuất Excel</button><span class=\"retSummarySmall\" id=\"retSystemSummary\">0 mã</span>"
+          )
+          text = text.replace(
+          "<button id=\"retShopClearBtn\" class=\"danger\">Xóa hết</button><span class=\"retSummarySmall\" id=\"retShopSummary\">0 mã</span>",
+          "<button id=\"retShopClearBtn\" class=\"danger\">Xóa hết</button><button id=\"retShopExportBtn\" class=\"green\">Xuất Excel</button><span class=\"retSummarySmall\" id=\"retShopSummary\">0 mã</span>"
+          )
+
+          export_block = r'''
+function retExportFileName(prefix,day=retState.day){const carrier=retCarrierName().replace(/[^\w\-]+/g,'_'),month=String(retState.month||retMonthNow()).replace(/[^0-9\-]/g,'');return `${prefix}_${carrier}_${month}_ngay_${day}.xlsx`}
+function retWriteXlsx(fileName,headers,rows,sheetName='Hang tra'){
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+  ws['!cols']=headers.map((h,i)=>({wch:Math.max(12,String(h||'').length+4,...rows.slice(0,1000).map(r=>String(r[i]??'').length+2))}));
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  XLSX.writeFile(wb,fileName);
+}
+function retExportCurrentList(side){
+  if(side==='system'){
+    const rows=retSortedRows(retState.system.filter(retRowMatches));
+    if(!rows.length)return alert('Không có dữ liệu hệ thống để xuất.');
+    retWriteXlsx(retExportFileName('hang_tra_he_thong'),['STT','MVD Hệ Thống','Thời gian','Nguồn','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.source||'',r.createdBy||'']),'He thong');
+    return;
+  }
+  const normal=retSortedRows(retValidShopRows(retState.shop).filter(retRowMatches));
+  const other=retSortedRows(retOtherRows(retState.shop).filter(retRowMatches));
+  const rows=[...normal,...other];
+  if(!rows.length)return alert('Không có dữ liệu SHOP để xuất.');
+  retWriteXlsx(retExportFileName('hang_tra_shop'),['STT','Shop đã nhận','Thời gian','Ghi chú','Loại','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.note||'',r.type==='other'?'Loại Khác':(r.source||''),r.createdBy||'']),'SHOP');
+}
+function retExportMissingRows(day,sysRows,valid,missing,other,status){
+  const rows=(missing||[]).map((r,i)=>[i+1,r.mvd||'',day,retCarrierName(),status||'',sysRows.length,valid.length,other.length,retFormatTime(r.createdAt),r.source||'',r.createdBy||'']);
+  retWriteXlsx(retExportFileName('hang_tra_thieu',day),['STT','MVD thiếu trong SHOP','Ngày','ĐVVC','Trạng thái','Hệ thống','SHOP','Loại khác','Thời gian hệ thống','Nguồn','Người tạo'],rows,'Thieu');
+}
+'''
+          text = text.replace("async function retDeleteRow(side,id){", export_block + "\nasync function retDeleteRow(side,id){")
+
+          text = text.replace(
+          "<div style=\"margin-top:10px;text-align:right\">${actionHtml}</div>",
+          "<div style=\"margin-top:10px;text-align:right;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap\"><button id=\"retExportMissingDayBtn\" class=\"green\" type=\"button\">Xuất Excel thiếu</button>${actionHtml}</div>"
           )
 
           text = text.replace(
-          "function renderReturnTables(){renderReturnSystem();renderReturnShop();renderReturnSummary()}",
-          "function renderReturnTables(){renderReturnSystem();renderReturnShop();renderReturnSummary();enableReturnTableResize()}"
+          ";$('retDayModal').classList.remove('hidden');const btn=$('retConfirmDayBtn');if(btn)btn.onclick=async()=>{",
+          ";$('retDayModal').classList.remove('hidden');const exportBtn=$('retExportMissingDayBtn');if(exportBtn)exportBtn.onclick=()=>retExportMissingRows(day,sysRows,valid,missing,other,status);const btn=$('retConfirmDayBtn');if(btn)btn.onclick=async()=>{"
           )
 
           text = text.replace(
-          "function retNoteInput(side,r){return `<input class=\"returnNoteInput\" data-ret-kind=\"${side}Note\" data-ret-id=\"${escapeAttr(r.id)}\" value=\"${escapeAttr(r.note||'')}\" ${side==='shop'&&!canEdit()?'disabled':''} ${side==='system'&&!isAdmin()?'disabled':''}>`}",
-          "function retNoteInput(side,r){return `<input class=\"returnNoteInput\" data-ret-kind=\"${side}Note\" data-ret-id=\"${escapeAttr(r.id)}\" value=\"${escapeAttr(r.note||'')}\" ${side==='shop'&&!canEdit()?'disabled':''} ${side==='system'&&!isAdmin()?'disabled':''}>`}\nfunction enableReturnTableResize(){\n  document.querySelectorAll('#hangtraPage .returnSystemTable,#hangtraPage .returnShopTable').forEach(table=>{\n    const ths=[...table.querySelectorAll('thead th')];\n    ths.forEach((th,idx)=>{\n      if(th.querySelector('.retResizeHandle'))return;\n      const handle=document.createElement('span');\n      handle.className='retResizeHandle';\n      handle.title='Kéo để đổi rộng cột';\n      th.appendChild(handle);\n      handle.addEventListener('mousedown',ev=>{\n        ev.preventDefault();ev.stopPropagation();\n        const startX=ev.clientX,startW=th.offsetWidth||80;\n        const onMove=e=>{\n          const w=Math.max(42,startW+e.clientX-startX);\n          th.style.width=w+'px';\n          table.querySelectorAll(`tr > *:nth-child(${idx+1})`).forEach(cell=>{cell.style.width=w+'px';cell.style.minWidth=w+'px'});\n        };\n        const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp)};\n        document.addEventListener('mousemove',onMove);\n        document.addEventListener('mouseup',onUp);\n      });\n    });\n  });\n}"
+          "const handled=['retCarrierAddBtn','retCarrierEditBtn','retCarrierDeleteBtn','retSearchBtn','retHistoryBtn','retSystemUploadBtn','retShopUploadBtn','retSystemManualBtn','retShopManualBtn','retShopOtherBtn','retSystemClearBtn','retShopClearBtn','retInputCloseBtn','retQuickAddBtn','retBulkSaveBtn','retCameraBtn','retCameraStopBtn','retDayCloseBtn'];",
+          "const handled=['retCarrierAddBtn','retCarrierEditBtn','retCarrierDeleteBtn','retSearchBtn','retHistoryBtn','retSystemUploadBtn','retShopUploadBtn','retSystemManualBtn','retShopManualBtn','retShopOtherBtn','retSystemClearBtn','retShopClearBtn','retSystemExportBtn','retShopExportBtn','retInputCloseBtn','retQuickAddBtn','retBulkSaveBtn','retCameraBtn','retCameraStopBtn','retDayCloseBtn'];"
           )
-
           text = text.replace(
-          "    const parts=[`Tổng (${info.valid.length})`];\n    if(info.cnt['Quét mã'])parts.push(`Quét mã (${info.cnt['Quét mã']})`);\n    if(info.cnt['Nhập tay'])parts.push(`Nhập tay (${info.cnt['Nhập tay']})`);\n    if(info.cnt['Up file'])parts.push(`Up file (${info.cnt['Up file']})`);\n    if(info.other.length)parts.push(`Loại khác (${info.other.length})`);\n    return `<div class=\"returnStatLine\"><b>Ngày ${info.d} (<span class=\"${retStatusClass(info.status)}\">${info.status}</span>)</b>: ${parts.join(' ')}${who} <button data-ret-detail-day=\"${info.d}\">Xem</button></div>`",
-          "    const parts=[`Tổng (${info.valid.length})`];\n    if(info.cnt['Quét mã'])parts.push(`Quét mã (${info.cnt['Quét mã']})`);\n    if(info.cnt['Nhập tay'])parts.push(`Nhập tay (${info.cnt['Nhập tay']})`);\n    if(info.cnt['Up file'])parts.push(`Up file (${info.cnt['Up file']})`);\n    if(info.other.length)parts.push(`Loại khác (${info.other.length})`);\n    let pendingCheck='';\n    if(info.status==='Chưa làm'&&info.sysRows.length){\n      const diff=info.sysRows.length-info.valid.length;\n      pendingCheck=diff>0?` <button class=\"danger\" data-ret-detail-day=\"${info.d}\">Thiếu (${diff})</button>`:` <button class=\"green\" data-ret-detail-day=\"${info.d}\">Đủ (${Math.abs(diff)})</button>`;\n    }\n    return `<div class=\"returnStatLine\"><b>Ngày ${info.d} (<span class=\"${retStatusClass(info.status)}\">${info.status}</span>)</b>: ${parts.join(' ')}${who}${pendingCheck} <button data-ret-detail-day=\"${info.d}\">Xem</button></div>`"
+          "if(id==='retShopClearBtn')return retClearSide('shop');\n        if(id==='retInputCloseBtn')",
+          "if(id==='retShopClearBtn')return retClearSide('shop');\n        if(id==='retSystemExportBtn')return retExportCurrentList('system');\n        if(id==='retShopExportBtn')return retExportCurrentList('shop');\n        if(id==='retInputCloseBtn')"
           )
 
-          text = text.replace(
-          "async function showReturnDayDetail(day){const [sys,shop,st]=await Promise.all([fbGet(`${retDayPath(day)}/system`),fbGet(`${retDayPath(day)}/shop`),fbGet(`${retBase()}/status/${day}`)]);const sysRows=Object.values(sys||{}),shopRows=Object.values(shop||{}),valid=retValidShopRows(shopRows),other=retOtherRows(shopRows),shopSet=new Set(valid.map(r=>retClean(r.mvd))),missing=sysRows.filter(r=>!shopSet.has(retClean(r.mvd))),status=retDayStatusLabel(day,sysRows.length,valid.length,st,shopRows.length,sysRows);$('retDayTitle').textContent=`Chi tiết ngày ${day} - ${retCarrierName()} - ${status}`;",
-          "async function showReturnDayDetail(day){const [sys,shop,st]=await Promise.all([fbGet(`${retDayPath(day)}/system`),fbGet(`${retDayPath(day)}/shop`),fbGet(`${retBase()}/status/${day}`)]);const sysRows=Object.values(sys||{}),shopRows=Object.values(shop||{}),valid=retValidShopRows(shopRows),other=retOtherRows(shopRows),shopSet=new Set(valid.map(r=>retClean(r.mvd))),missing=sysRows.filter(r=>!shopSet.has(retClean(r.mvd))),status=retDayStatusLabel(day,sysRows.length,valid.length,st,shopRows.length,sysRows),monthNo=Number(String(retState.month||retMonthNow()).split('-')[1]||0);$('retDayTitle').textContent=`Chi tiết ngày ${day}/${monthNo} - ${retCarrierName()} - ${status}`;"
-          )
-
-          required = ['enableReturnTableResize', 'retResizeHandle', 'pendingCheck', 'Chi tiết ngày ${day}/${monthNo}']
+          required = ['retSystemExportBtn','retShopExportBtn','retExportMissingDayBtn','retExportCurrentList','retExportMissingRows']
           missing = [s for s in required if s not in text]
           if missing:
             raise SystemExit('Patch failed, missing markers: ' + ', '.join(missing))
@@ -58,7 +89,7 @@ jobs:
             print('No index.html changes needed')
           else:
             path.write_text(text, encoding='utf-8')
-            print('Patched index.html')
+            print('Patched index.html exports')
           PY
       - name: Check inline script syntax
         run: |
@@ -78,6 +109,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "patch hang tra day detail and resizable columns"
+            git commit -m "patch hang tra excel exports"
             git push
           fi
