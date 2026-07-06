@@ -1,0 +1,102 @@
+name: Codex patch hang tra duplicate scan
+
+on:
+  push:
+    paths:
+      - .github/workflows/codex-patch-hangtra-20260706.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Patch index.html
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          text = text.replace(
+          "function retSourceCounts(rows){const out={'Up file':0,'Nhập tay':0,'Quét mã':0,'Loại Khác':0};(rows||[]).forEach(r=>{out[r.source] = (out[r.source]||0)+1});return out}\nfunction retActionText",
+          "function retSourceCounts(rows){const out={'Up file':0,'Nhập tay':0,'Quét mã':0,'Loại Khác':0};(rows||[]).forEach(r=>{out[r.source] = (out[r.source]||0)+1});return out}\nfunction retUniqueByMvd(rows=[]){const seen=new Set(),out=[];retSortedRows(rows||[]).forEach(r=>{const c=retClean(r&&r.mvd);if(!c||seen.has(c))return;seen.add(c);out.push(r)});return out}\nfunction retRowsHaveCode(rows,code,other=false){return (rows||[]).some(r=>retClean(r&&r.mvd)===code&&(other?String(r&&r.type)==='other':String(r&&r.type)!=='other'))}\nasync function retRemoteHasCode(side,code,opts={}){const obj=await fbGet(`${retDayPath()}/${side}`)||{};return Object.values(obj||{}).some(r=>retClean(r&&r.mvd)===code&&(side!=='shop'||(opts.other?String(r&&r.type)==='other':String(r&&r.type)!=='other')))}\nfunction retActionText"
+          )
+
+          text = text.replace(
+          "function retValidShopRows(rows=retState.shop){return (rows||[]).filter(r=>r.type!=='other')}\nfunction retOtherRows(rows=retState.shop){return (rows||[]).filter(r=>r.type==='other')}",
+          "function retValidShopRows(rows=retState.shop){return retUniqueByMvd((rows||[]).filter(r=>r.type!=='other'))}\nfunction retOtherRows(rows=retState.shop){return retUniqueByMvd((rows||[]).filter(r=>r.type==='other'))}"
+          )
+
+          text = text.replace(
+          "function retMapSystem(){const m={};retState.system.forEach(r=>m[retClean(r.mvd)]=r);return m}\nfunction retMapShop(except=''){const m={};retState.shop.forEach(r=>{if(r.id!==except)m[retClean(r.mvd)]=r});return m}",
+          "function retMapSystem(){const m={};retState.system.forEach(r=>m[retClean(r.mvd)]=r);return m}\nfunction retMapShop(except=''){const m={};retState.shop.forEach(r=>{if(r.id!==except&&r.type!=='other')m[retClean(r.mvd)]=r});return m}\nconst retPendingAdds=new Set();\nfunction retAddLockKey(side,code,opts={}){return `${retState.carrierKey}|${retState.month}|${retState.day}|${side}|${opts.other?'other':'normal'}|${code}`}"
+          )
+
+          text = re.sub(
+          r"async function retAddRow\(side,mvd,source='Nhập tay',opts=\{\}\)\{.*?\}\nasync function retAddMany",
+          """async function retAddRow(side,mvd,source='Nhập tay',opts={}){\n  const code=retClean(mvd);\n  if(!code)return {ok:false,reason:'Rỗng'};\n  if(side==='system'&&!isAdmin())return {ok:false,reason:'Chỉ Admin được thao tác danh sách hệ thống'};\n  if(side==='shop'&&!canEdit())return {ok:false,reason:'Tài khoản chỉ xem'};\n  if(side==='shop'&&!opts.other&&!retMapSystem()[code])return {ok:false,reason:'Không có trong danh sách hệ thống'};\n  const lockKey=retAddLockKey(side,code,opts);\n  if(retPendingAdds.has(lockKey))return {ok:false,reason:'Đang ghi mã này, bỏ qua lần bấm/quét lặp'};\n  retPendingAdds.add(lockKey);\n  try{\n    if(side==='shop'&&retRowsHaveCode(retState.shop,code,!!opts.other))return {ok:false,reason:'Đã quét / nhập trước đó'};\n    if(side==='system'&&retMapSystem()[code])return {ok:false,reason:'Đã có trong hệ thống'};\n    if(await retRemoteHasCode(side,code,opts))return {ok:false,reason:side==='system'?'Đã có trong hệ thống':'Đã quét / nhập trước đó'};\n    if(!opts.other){\n      if(!opts.monthIndex)opts.monthIndex=await retBuildMonthCodeIndex(side);\n      const hit=opts.monthIndex&&opts.monthIndex[code];\n      const msg=retDuplicateMonthMessage(hit);\n      if(msg)return {ok:false,reason:msg};\n    }\n    const id=pushKey(`${retDayPath()}/${side}`),row={mvd:code,note:opts.note||'',source:opts.other?'Loại Khác':source,type:opts.other?'other':'normal',createdAt:nowStamp(),createdBy:appUser?.name||''};\n    await fbSet(`${retDayPath()}/${side}/${id}`,row);\n    if(opts.monthIndex&&!opts.other)opts.monthIndex[code]={day:retState.day,id};\n    if(side==='system')retState.system.push({...row,id});else retState.shop.push({...row,id});\n    await retLog(`add_${side}`,{source:row.source,mvd:code,type:row.type});\n    renderReturnTables();\n    retRefreshMonthStatsSoon();\n    return {ok:true,row};\n  }finally{\n    retPendingAdds.delete(lockKey);\n  }\n}\nasync function retAddMany""",
+          text,
+          flags=re.S,
+          count=1
+          )
+
+          text = text.replace(
+          "const valid=shopRows.filter(r=>r.type!=='other'),other=shopRows.filter(r=>r.type==='other'),cnt=retSourceCounts(shopRows),st=statuses[String(d)]||statuses[d]||null;",
+          "const valid=retValidShopRows(shopRows),other=retOtherRows(shopRows),cnt=retSourceCounts([...valid,...other]),st=statuses[String(d)]||statuses[d]||null;"
+          )
+
+          text = text.replace(
+          "const parts=[`Tổng (${info.sysRows.length})`];",
+          "const parts=[`Tổng (${info.valid.length})`];"
+          )
+
+          text = text.replace(
+          "const sysRows=Object.values(sys||{}),shopRows=Object.values(shop||{}),valid=shopRows.filter(r=>r.type!=='other'),other=shopRows.filter(r=>r.type==='other'),shopSet=new Set(valid.map(r=>retClean(r.mvd))),missing=sysRows.filter(r=>!shopSet.has(retClean(r.mvd))),status=retDayStatusLabel(day,sysRows.length,valid.length,st,shopRows.length,sysRows);",
+          "const sysRows=Object.values(sys||{}),shopRows=Object.values(shop||{}),valid=retValidShopRows(shopRows),other=retOtherRows(shopRows),shopSet=new Set(valid.map(r=>retClean(r.mvd))),missing=sysRows.filter(r=>!shopSet.has(retClean(r.mvd))),status=retDayStatusLabel(day,sysRows.length,valid.length,st,shopRows.length,sysRows);"
+          )
+
+          text = text.replace(
+          "await fbSet(`${retDayPath()}/${side}`,null);\n  await retLog(`clear_${side}`,{source:'Xóa hết',count:retState.shop.length});\n  retState.shop=[];\n  renderReturnTables();\n  retRefreshMonthStatsSoon();",
+          "await fbSet(`${retDayPath()}/${side}`,null);\n  await fbSet(`${retBase()}/status/${retState.day}`,null);\n  await retLog(`clear_${side}`,{source:'Xóa hết',count:retState.shop.length});\n  retState.shop=[];\n  renderReturnTables();\n  await renderReturnMonthStats();"
+          )
+
+          required = ['retPendingAdds', 'retRemoteHasCode', 'retUniqueByMvd', "Tổng (${info.valid.length})"]
+          missing = [s for s in required if s not in text]
+          if missing:
+            raise SystemExit('Patch failed, missing markers: ' + ', '.join(missing))
+          if text == original:
+            print('No index.html changes needed')
+          else:
+            path.write_text(text, encoding='utf-8')
+            print('Patched index.html')
+          PY
+      - name: Check inline script syntax
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S)
+          Path('/tmp/index-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/index-inline.js
+      - name: Commit patch
+        run: |
+          git config user.name "codex-bot"
+          git config user.email "codex-bot@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "fix hang tra duplicate scan and shop stats"
+            git push
+          fi
