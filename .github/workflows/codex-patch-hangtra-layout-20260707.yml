@@ -74,7 +74,7 @@ jobs:
           ''').strip() + '\n'
           text = text[:start] + resize_fn + text[end:]
 
-          required = ['minmax(430px,.78fr) minmax(720px,1.55fr) minmax(360px,.75fr)', "returnSystemTable')?[54,185,145,80]", 'returnShopTable')
+          required = ['minmax(430px,.78fr) minmax(720px,1.55fr) minmax(360px,.75fr)', "returnSystemTable')?[54,185,145,80]", '[54,190,150,170,90,80]']
           missing = [s for s in required if s not in text]
           if missing:
               raise SystemExit('Patch failed, missing markers: ' + ', '.join(missing))
