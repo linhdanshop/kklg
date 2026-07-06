@@ -1,0 +1,89 @@
+name: Codex patch hang tra export title
+
+on:
+  push:
+    paths:
+      - .github/workflows/codex-patch-hangtra-export-title-20260706.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Patch Excel export titles
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          start = text.index('function retExportFileName(prefix,day=retState.day){')
+          end = text.index('function retExportCurrentList(side){', start)
+          export_helpers = textwrap.dedent(r'''
+              function retExportFileName(prefix,day=retState.day){const carrier=retCarrierName().replace(/[^\w\-]+/g,'_'),month=String(retState.month||retMonthNow()).replace(/[^0-9\-]/g,'');return `${prefix}_${carrier}_${month}_ngay_${day}.xlsx`}
+              function retExportDayText(day=retState.day){const parts=String(retState.month||retMonthNow()).split('-'),y=parts[0]||'',m=Number(parts[1]||0)||'';return `Ngày ${Number(day)||''}/${m}/${y}`}
+              function retExportMeta(title,day=retState.day,lines=[]){const month=String(retState.month||retMonthNow());return {title:`${title} - ${retCarrierName()} - ${retExportDayText(day)}`,lines:[`ĐVVC: ${retCarrierName()} | Tháng: ${month} | ${retExportDayText(day)}`,...(lines||[]),`Xuất lúc: ${retFormatTime(nowStamp())}`]}}
+              function retWriteXlsx(fileName,headers,rows,sheetName='Hang tra',meta={}){
+                const titleRows=[];
+                if(meta&&meta.title)titleRows.push([meta.title]);
+                (meta&&meta.lines?meta.lines:[]).forEach(line=>titleRows.push([line]));
+                if(titleRows.length)titleRows.push([]);
+                const aoa=[...titleRows,headers,...rows];
+                const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet(aoa);
+                const maxCol=Math.max(headers.length-1,0);
+                if(titleRows.length){
+                  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:maxCol}}];
+                  for(let r=1;r<titleRows.length-1;r++)ws['!merges'].push({s:{r:r,c:0},e:{r:r,c:maxCol}});
+                }
+                ws['!cols']=headers.map((h,i)=>({wch:Math.min(45,Math.max(12,String(h||'').length+4,...rows.slice(0,1000).map(r=>String(r[i]??'').length+2)))}));
+                XLSX.utils.book_append_sheet(wb,ws,sheetName);
+                XLSX.writeFile(wb,fileName);
+              }
+          ''').strip() + '\n'
+          text = text[:start] + export_helpers + text[end:]
+
+          old = "retWriteXlsx(retExportFileName('hang_tra_he_thong'),['STT','MVD Hệ Thống','Thời gian','Nguồn','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.source||'',r.createdBy||'']),'He thong');"
+          new = "retWriteXlsx(retExportFileName('hang_tra_he_thong'),['STT','MVD Hệ Thống','Thời gian','Nguồn','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.source||'',r.createdBy||'']),'He thong',retExportMeta('DANH SÁCH TRẢ HÀNG TRÊN HỆ THỐNG GH',retState.day,[`Tổng hệ thống: ${rows.length} mã`]));"
+          if old in text:
+              text = text.replace(old, new, 1)
+
+          old = "retWriteXlsx(retExportFileName('hang_tra_shop'),['STT','Shop đã nhận','Thời gian','Ghi chú','Loại','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.note||'',r.type==='other'?'Loại Khác':(r.source||''),r.createdBy||'']),'SHOP');"
+          new = "retWriteXlsx(retExportFileName('hang_tra_shop'),['STT','Shop đã nhận','Thời gian','Ghi chú','Loại','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.note||'',r.type==='other'?'Loại Khác':(r.source||''),r.createdBy||'']),'SHOP',retExportMeta('SỐ LƯỢNG BÀN GIAO CHO SHOP',retState.day,[`Bàn giao: ${normal.length} | Loại khác: ${other.length} | Tổng xuất: ${rows.length}`]));"
+          if old in text:
+              text = text.replace(old, new, 1)
+
+          old = "retWriteXlsx(retExportFileName('hang_tra_thieu',day),['STT','MVD thiếu trong SHOP','Ngày','ĐVVC','Trạng thái','Hệ thống','SHOP','Loại khác','Thời gian hệ thống','Nguồn','Người tạo'],rows,'Thieu');"
+          new = "retWriteXlsx(retExportFileName('hang_tra_thieu',day),['STT','MVD thiếu trong SHOP','Ngày','ĐVVC','Trạng thái','Hệ thống','SHOP','Loại khác','Thời gian hệ thống','Nguồn','Người tạo'],rows,'Thieu',retExportMeta('DANH SÁCH THIẾU TRONG SHOP',day,[`Trạng thái: ${status||''} | Hệ thống: ${sysRows.length} | SHOP: ${valid.length} | Thiếu: ${(missing||[]).length} | Loại khác: ${other.length}`]));"
+          if old in text:
+              text = text.replace(old, new, 1)
+
+          required = ["retExportDayText", "retExportMeta('DANH SÁCH THIẾU TRONG SHOP'", "DANH SÁCH TRẢ HÀNG TRÊN HỆ THỐNG GH", "SỐ LƯỢNG BÀN GIAO CHO SHOP"]
+          missing = [s for s in required if s not in text]
+          if missing:
+              raise SystemExit('Patch failed, missing markers: ' + ', '.join(missing))
+          if text == original:
+              print('No index.html changes needed')
+          else:
+              path.write_text(text, encoding='utf-8')
+              print('Patched export titles')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "codex-bot"
+          git config user.email "codex-bot@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "add hang tra excel export titles"
+            git push
+          fi
