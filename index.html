@@ -1062,9 +1062,12 @@ function retUniqueCodes(list){const seen=new Set(),out=[];(list||[]).forEach(v=>
 function retDayCount(){const [y,m]=String(retState.month||retMonthNow()).split('-').map(Number);return new Date(y,m,0).getDate()}
 function retFormatTime(ts){return ts?new Date(ts).toLocaleString('vi-VN'):''}
 function retSourceCounts(rows){const out={'Up file':0,'Nhập tay':0,'Quét mã':0,'Loại Khác':0};(rows||[]).forEach(r=>{out[r.source] = (out[r.source]||0)+1});return out}
+function retUniqueByMvd(rows=[]){const seen=new Set(),out=[];retSortedRows(rows||[]).forEach(r=>{const c=retClean(r&&r.mvd);if(!c||seen.has(c))return;seen.add(c);out.push(r)});return out}
+function retRowsHaveCode(rows,code,other=false){return (rows||[]).some(r=>retClean(r&&r.mvd)===code&&(other?String(r&&r.type)==='other':String(r&&r.type)!=='other'))}
+async function retRemoteHasCode(side,code,opts={}){const obj=await fbGet(`${retDayPath()}/${side}`)||{};return Object.values(obj||{}).some(r=>retClean(r&&r.mvd)===code&&(side!=='shop'||(opts.other?String(r&&r.type)==='other':String(r&&r.type)!=='other')))}
 function retActionText(action){const map={add_system:'Thêm hệ thống',add_shop:'Thêm SHOP',batch_system:'Nhập hàng loạt hệ thống',batch_shop:'Nhập hàng loạt SHOP',delete_system:'Xóa hệ thống',delete_shop:'Xóa SHOP',delete_system_with_shop:'Xóa hệ thống + SHOP',clear_system:'Xóa hết hệ thống',clear_shop:'Xóa hết SHOP',note_system:'Ghi chú hệ thống',note_shop:'Ghi chú SHOP',confirm_day:'Xác nhận ngày',unconfirm_day:'Chuyển lại chưa làm'};return map[action]||String(action||'').replace(/_/g,' ')}
-function retValidShopRows(rows=retState.shop){return (rows||[]).filter(r=>r.type!=='other')}
-function retOtherRows(rows=retState.shop){return (rows||[]).filter(r=>r.type==='other')}
+function retValidShopRows(rows=retState.shop){return retUniqueByMvd((rows||[]).filter(r=>r.type!=='other'))}
+function retOtherRows(rows=retState.shop){return retUniqueByMvd((rows||[]).filter(r=>r.type==='other'))}
 async function retLog(action,extra={}){try{const k=pushKey(retHistoryPath());await fbSet(`${retHistoryPath()}/${k}`,{time:nowStamp(),user:appUser?.name||'',day:retState.day,carrier:retCarrierName(),source:extra.source||'',action,...extra})}catch(e){}}
 async function loadReturnCarriers(){let obj=await fbGet(`${RETURN_ROOT}/settings/carriers`)||{};if(!Object.keys(obj).length){obj={JT:{key:'JT',name:'JT',order:1}};await fbSet(`${RETURN_ROOT}/settings/carriers`,obj)}retState.carriers=Object.values(obj).sort((a,b)=>(a.order||999)-(b.order||999)||String(a.name).localeCompare(String(b.name),'vi'));if(!retState.carriers.some(c=>c.key===retState.carrierKey)){retState.carrierKey=retState.carriers[0]?.key||'JT';retState.carrier=retState.carriers[0]?.name||'JT'}renderReturnCarrierSelect()}
 function renderReturnCarrierSelect(){const sel=$('retCarrierSelect');if(!sel)return;sel.innerHTML=(retState.carriers||[]).map(c=>`<option value="${escapeAttr(c.key)}">${escapeHtml(c.name)}</option>`).join('');sel.value=retState.carrierKey;const cur=retState.carriers.find(c=>c.key===retState.carrierKey);if(cur)retState.carrier=cur.name;if($('retStatCarrier'))$('retStatCarrier').textContent=retCarrierName()}
@@ -1128,10 +1131,42 @@ function retRefreshMonthStatsSoon(delay=120){
   },delay);
 }
 function retMapSystem(){const m={};retState.system.forEach(r=>m[retClean(r.mvd)]=r);return m}
-function retMapShop(except=''){const m={};retState.shop.forEach(r=>{if(r.id!==except)m[retClean(r.mvd)]=r});return m}
+function retMapShop(except=''){const m={};retState.shop.forEach(r=>{if(r.id!==except&&r.type!=='other')m[retClean(r.mvd)]=r});return m}
+const retPendingAdds=new Set();
+function retAddLockKey(side,code,opts={}){return `${retState.carrierKey}|${retState.month}|${retState.day}|${side}|${opts.other?'other':'normal'}|${code}`}
 async function retBuildMonthCodeIndex(side){const days=await fbGet(`${retBase()}/days`)||{},map={};Object.entries(days).forEach(([day,obj])=>{Object.entries((obj&&obj[side])||{}).forEach(([id,r])=>{const c=retClean(r&&r.mvd);if(c&&!map[c])map[c]={day:Number(day),id}})});return map}
 function retDuplicateMonthMessage(hit){return hit&&hit.day&&hit.day!==retState.day?`Đã có ở ngày ${hit.day}`:''}
-async function retAddRow(side,mvd,source='Nhập tay',opts={}){const code=retClean(mvd);if(!code)return {ok:false,reason:'Rỗng'};if(side==='system'&&!isAdmin())return {ok:false,reason:'Chỉ Admin được thao tác danh sách hệ thống'};if(side==='shop'&&!canEdit())return {ok:false,reason:'Tài khoản chỉ xem'};if(side==='shop'&&!opts.other&&!retMapSystem()[code])return {ok:false,reason:'Không có trong danh sách hệ thống'};if(side==='shop'&&retMapShop()[code])return {ok:false,reason:'Đã quét / nhập trước đó'};if(side==='system'&&retMapSystem()[code])return {ok:false,reason:'Đã có trong hệ thống'};if(!opts.other){if(!opts.monthIndex)opts.monthIndex=await retBuildMonthCodeIndex(side);const hit=opts.monthIndex&&opts.monthIndex[code];const msg=retDuplicateMonthMessage(hit);if(msg)return {ok:false,reason:msg}}const id=pushKey(`${retDayPath()}/${side}`),row={mvd:code,note:opts.note||'',source:opts.other?'Loại Khác':source,type:opts.other?'other':'normal',createdAt:nowStamp(),createdBy:appUser?.name||''};await fbSet(`${retDayPath()}/${side}/${id}`,row);if(opts.monthIndex&&!opts.other)opts.monthIndex[code]={day:retState.day,id};if(side==='system')retState.system.push({...row,id});else retState.shop.push({...row,id});await retLog(`add_${side}`,{source:row.source,mvd:code,type:row.type});renderReturnTables();retRefreshMonthStatsSoon();return {ok:true,row}}
+async function retAddRow(side,mvd,source='Nhập tay',opts={}){
+  const code=retClean(mvd);
+  if(!code)return {ok:false,reason:'Rỗng'};
+  if(side==='system'&&!isAdmin())return {ok:false,reason:'Chỉ Admin được thao tác danh sách hệ thống'};
+  if(side==='shop'&&!canEdit())return {ok:false,reason:'Tài khoản chỉ xem'};
+  if(side==='shop'&&!opts.other&&!retMapSystem()[code])return {ok:false,reason:'Không có trong danh sách hệ thống'};
+  const lockKey=retAddLockKey(side,code,opts);
+  if(retPendingAdds.has(lockKey))return {ok:false,reason:'Đang ghi mã này, bỏ qua lần bấm/quét lặp'};
+  retPendingAdds.add(lockKey);
+  try{
+    if(side==='shop'&&retRowsHaveCode(retState.shop,code,!!opts.other))return {ok:false,reason:'Đã quét / nhập trước đó'};
+    if(side==='system'&&retMapSystem()[code])return {ok:false,reason:'Đã có trong hệ thống'};
+    if(await retRemoteHasCode(side,code,opts))return {ok:false,reason:side==='system'?'Đã có trong hệ thống':'Đã quét / nhập trước đó'};
+    if(!opts.other){
+      if(!opts.monthIndex)opts.monthIndex=await retBuildMonthCodeIndex(side);
+      const hit=opts.monthIndex&&opts.monthIndex[code];
+      const msg=retDuplicateMonthMessage(hit);
+      if(msg)return {ok:false,reason:msg};
+    }
+    const id=pushKey(`${retDayPath()}/${side}`),row={mvd:code,note:opts.note||'',source:opts.other?'Loại Khác':source,type:opts.other?'other':'normal',createdAt:nowStamp(),createdBy:appUser?.name||''};
+    await fbSet(`${retDayPath()}/${side}/${id}`,row);
+    if(opts.monthIndex&&!opts.other)opts.monthIndex[code]={day:retState.day,id};
+    if(side==='system')retState.system.push({...row,id});else retState.shop.push({...row,id});
+    await retLog(`add_${side}`,{source:row.source,mvd:code,type:row.type});
+    renderReturnTables();
+    retRefreshMonthStatsSoon();
+    return {ok:true,row};
+  }finally{
+    retPendingAdds.delete(lockKey);
+  }
+}
 async function retAddMany(side,codes,source='Nhập tay',opts={}){let ok=0,miss=[],dup=[],empty=0;const localOpts={...opts},seenInput=new Set();if(!localOpts.other)localOpts.monthIndex=await retBuildMonthCodeIndex(side);for(const c of codes){const clean=retClean(c);if(!clean){empty++;continue}if(!localOpts.other&&seenInput.has(clean)){dup.push(`${clean} (Trùng trong file)`);continue}if(!localOpts.other)seenInput.add(clean);const res=await retAddRow(side,clean,source,localOpts);if(res.ok)ok++;else if(String(res.reason).includes('Không có'))miss.push(clean);else if(String(res.reason).includes('Đã'))dup.push(`${clean} (${res.reason})`);else dup.push(`${clean} (${res.reason})`)}let msg=`Đã ghi ${ok} mã.`;if(miss.length)msg+=`\nKhông có trong hệ thống: ${miss.slice(0,40).join(', ')}${miss.length>40?'...':''}`;if(dup.length)msg+=`\nTrùng/bỏ qua: ${dup.slice(0,40).join(', ')}${dup.length>40?'...':''}`;if(empty)msg+=`\nBỏ qua ${empty} dòng rỗng.`;alert(msg);await retLog(`batch_${side}`,{source,ok,missing:miss,duplicate:dup,other:!!opts.other});}
 function retSplitLines(text){return String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean)}
 function retOpenInput(side,source='Nhập tay/Quét Mã',other=false){if(side==='system'&&!isAdmin())return alert('Chỉ Admin được thao tác danh sách hệ thống.');if(side==='shop'&&!canEdit())return alert('Tài khoản chỉ xem không được thao tác.');retState.inputSide=side;retState.inputSource=source;retState.inputOther=!!other;const area=side==='system'?'HỆ THỐNG':'BÀN GIAO SHOP';$('retInputTitle').textContent=other?'NHẬP LOẠI KHÁC':`NHẬP TAY / QUÉT MÃ - ${area}`;$('retInputHint').textContent=other?'Loại khác sẽ ghi riêng, không tính đủ / thiếu. Khu quét mã dùng máy quét hoặc camera; khu nhập tay dán nhiều mã.':'Khu quét mã: Dùng máy quét hoặc camera để quét. Khu nhập tay: dán nhiều mã, mỗi dòng là 1 mã.';$('retQuickInput').placeholder='Dùng máy quét hoặc camera để quét';$('retQuickInput').value='';$('retBulkInput').value='';$('retInputModal').classList.remove('hidden');setTimeout(()=>$('retQuickInput').focus(),80)}
@@ -1183,10 +1218,11 @@ Mã khớp: ${sample}${matchedShop.length>20?'...':''}`;
   }
   if(!confirm(`Xóa hết danh sách ${sideName} ngày ${retState.day}?`))return;
   await fbSet(`${retDayPath()}/${side}`,null);
+  await fbSet(`${retBase()}/status/${retState.day}`,null);
   await retLog(`clear_${side}`,{source:'Xóa hết',count:retState.shop.length});
   retState.shop=[];
   renderReturnTables();
-  retRefreshMonthStatsSoon();
+  await renderReturnMonthStats();
 }
 
 function retShowRowDetail(side,id){
@@ -1233,7 +1269,7 @@ async function renderReturnMonthStats(){
   for(let d=1;d<=n;d++){
     const obj=days[String(d)]||days[d]||{};
     const sysRows=Object.values((obj&&obj.system)||{}),shopRows=Object.values((obj&&obj.shop)||{});
-    const valid=shopRows.filter(r=>r.type!=='other'),other=shopRows.filter(r=>r.type==='other'),cnt=retSourceCounts(shopRows),st=statuses[String(d)]||statuses[d]||null;
+    const valid=retValidShopRows(shopRows),other=retOtherRows(shopRows),cnt=retSourceCounts([...valid,...other]),st=statuses[String(d)]||statuses[d]||null;
     const status=retDayStatusLabel(d,sysRows.length,valid.length,st,shopRows.length,sysRows);
     if(!sysRows.length&&st)statusCleanup[`${retBase()}/status/${d}`]=null;
     const key=retStatusFilterKey(status);
@@ -1249,7 +1285,7 @@ async function renderReturnMonthStats(){
   const filterBtns=`<div class="returnStatFilters"><button data-ret-stat-filter="ALL" class="${f==='ALL'?'on':''}">Tất cả</button><button data-ret-stat-filter="BAD" class="${f==='BAD'?'on':''}">Thiếu (${counts.BAD})</button><button data-ret-stat-filter="GOOD" class="${f==='GOOD'?'on':''}">Đủ (${counts.GOOD})</button><button data-ret-stat-filter="PENDING" class="${f==='PENDING'?'on':''}">Chưa làm (${counts.PENDING})</button><button data-ret-stat-filter="NONE" class="${f==='NONE'?'on':''}">Không (${counts.NONE})</button><button data-ret-show-other="1" class="warn">Loại khác (${otherTotal})</button></div>`;
   const makeLine=info=>{
     const who=info.st&&info.st.confirmedBy?` - ${escapeHtml(info.st.confirmedBy)}`:'';
-    const parts=[`Tổng (${info.sysRows.length})`];
+    const parts=[`Tổng (${info.valid.length})`];
     if(info.cnt['Quét mã'])parts.push(`Quét mã (${info.cnt['Quét mã']})`);
     if(info.cnt['Nhập tay'])parts.push(`Nhập tay (${info.cnt['Nhập tay']})`);
     if(info.cnt['Up file'])parts.push(`Up file (${info.cnt['Up file']})`);
@@ -1266,7 +1302,7 @@ async function renderReturnMonthStats(){
   }
   $('retMonthStats').innerHTML=`${filterBtns}${body}`;
 }
-async function showReturnDayDetail(day){const [sys,shop,st]=await Promise.all([fbGet(`${retDayPath(day)}/system`),fbGet(`${retDayPath(day)}/shop`),fbGet(`${retBase()}/status/${day}`)]);const sysRows=Object.values(sys||{}),shopRows=Object.values(shop||{}),valid=shopRows.filter(r=>r.type!=='other'),other=shopRows.filter(r=>r.type==='other'),shopSet=new Set(valid.map(r=>retClean(r.mvd))),missing=sysRows.filter(r=>!shopSet.has(retClean(r.mvd))),status=retDayStatusLabel(day,sysRows.length,valid.length,st,shopRows.length,sysRows);$('retDayTitle').textContent=`Chi tiết ngày ${day} - ${retCarrierName()} - ${status}`;let actionHtml='';if(!canEdit()){actionHtml='<span class="muted">Tài khoản chỉ xem, không được chuyển trạng thái.</span>'}else if(st&&st.confirmed){actionHtml=`<button id="retConfirmDayBtn" class="warn">Chuyển lại chưa làm ngày ${day}</button>`}else if(sysRows.length>0){actionHtml=`<button id="retConfirmDayBtn" class="green">Xác nhận đã làm ngày ${day}</button>`}else{actionHtml='<span class="muted">Ngày này chưa có Tổng hệ thống, trạng thái là Không.</span>'}$('retDayBody').innerHTML=`<div><b>Hệ thống:</b> ${sysRows.length} | <b>SHOP:</b> ${valid.length} | <b>Thiếu:</b> ${missing.length} | <b>Loại khác:</b> ${other.length}</div><div class="returnDayPopupGrid" style="margin-top:8px"><div><b>Thiếu trong SHOP</b><div class="returnMiniList">${missing.map(r=>escapeHtml(r.mvd)).join('<br>')||'Không thiếu'}</div></div><div><b>Loại khác</b><div class="returnMiniList">${other.map(r=>escapeHtml(r.mvd)).join('<br>')||'Không có'}</div></div></div><div style="margin-top:10px;text-align:right">${actionHtml}</div>`;$('retDayModal').classList.remove('hidden');const btn=$('retConfirmDayBtn');if(btn)btn.onclick=async()=>{if(!canEdit())return alert('Tài khoản chỉ xem không được chuyển trạng thái.');if(st&&st.confirmed){if(!confirm(`Chuyển ngày ${day} về trạng thái chưa làm?`))return;await fbSet(`${retBase()}/status/${day}`,null);await retLog('unconfirm_day',{source:'Chuyển lại chưa làm',day,mvd:`Ngày ${day}`,before:st.status||'Đã xác nhận',after:'Chưa làm'});$('retDayModal').classList.add('hidden');await renderReturnMonthStats();return}const msg=missing.length?`Ngày ${day} đang THIẾU ${missing.length} mã. Xác nhận vẫn chuyển đã làm?`:`Ngày ${day} đã ĐỦ. Xác nhận đã làm?`;if(!confirm(msg))return;await fbSet(`${retBase()}/status/${day}`,{confirmed:true,confirmedAt:nowStamp(),confirmedBy:appUser?.name||'',status:(sysRows.length&& !missing.length)?'Đủ':'Thiếu',system:sysRows.length,shop:valid.length,missing:missing.length,other:other.length});await retLog('confirm_day',{source:'Xác nhận',day,mvd:`Ngày ${day}`,before:'Chưa',after:(sysRows.length&& !missing.length)?'Đủ':'Thiếu'});$('retDayModal').classList.add('hidden');await renderReturnMonthStats()}}
+async function showReturnDayDetail(day){const [sys,shop,st]=await Promise.all([fbGet(`${retDayPath(day)}/system`),fbGet(`${retDayPath(day)}/shop`),fbGet(`${retBase()}/status/${day}`)]);const sysRows=Object.values(sys||{}),shopRows=Object.values(shop||{}),valid=retValidShopRows(shopRows),other=retOtherRows(shopRows),shopSet=new Set(valid.map(r=>retClean(r.mvd))),missing=sysRows.filter(r=>!shopSet.has(retClean(r.mvd))),status=retDayStatusLabel(day,sysRows.length,valid.length,st,shopRows.length,sysRows);$('retDayTitle').textContent=`Chi tiết ngày ${day} - ${retCarrierName()} - ${status}`;let actionHtml='';if(!canEdit()){actionHtml='<span class="muted">Tài khoản chỉ xem, không được chuyển trạng thái.</span>'}else if(st&&st.confirmed){actionHtml=`<button id="retConfirmDayBtn" class="warn">Chuyển lại chưa làm ngày ${day}</button>`}else if(sysRows.length>0){actionHtml=`<button id="retConfirmDayBtn" class="green">Xác nhận đã làm ngày ${day}</button>`}else{actionHtml='<span class="muted">Ngày này chưa có Tổng hệ thống, trạng thái là Không.</span>'}$('retDayBody').innerHTML=`<div><b>Hệ thống:</b> ${sysRows.length} | <b>SHOP:</b> ${valid.length} | <b>Thiếu:</b> ${missing.length} | <b>Loại khác:</b> ${other.length}</div><div class="returnDayPopupGrid" style="margin-top:8px"><div><b>Thiếu trong SHOP</b><div class="returnMiniList">${missing.map(r=>escapeHtml(r.mvd)).join('<br>')||'Không thiếu'}</div></div><div><b>Loại khác</b><div class="returnMiniList">${other.map(r=>escapeHtml(r.mvd)).join('<br>')||'Không có'}</div></div></div><div style="margin-top:10px;text-align:right">${actionHtml}</div>`;$('retDayModal').classList.remove('hidden');const btn=$('retConfirmDayBtn');if(btn)btn.onclick=async()=>{if(!canEdit())return alert('Tài khoản chỉ xem không được chuyển trạng thái.');if(st&&st.confirmed){if(!confirm(`Chuyển ngày ${day} về trạng thái chưa làm?`))return;await fbSet(`${retBase()}/status/${day}`,null);await retLog('unconfirm_day',{source:'Chuyển lại chưa làm',day,mvd:`Ngày ${day}`,before:st.status||'Đã xác nhận',after:'Chưa làm'});$('retDayModal').classList.add('hidden');await renderReturnMonthStats();return}const msg=missing.length?`Ngày ${day} đang THIẾU ${missing.length} mã. Xác nhận vẫn chuyển đã làm?`:`Ngày ${day} đã ĐỦ. Xác nhận đã làm?`;if(!confirm(msg))return;await fbSet(`${retBase()}/status/${day}`,{confirmed:true,confirmedAt:nowStamp(),confirmedBy:appUser?.name||'',status:(sysRows.length&& !missing.length)?'Đủ':'Thiếu',system:sysRows.length,shop:valid.length,missing:missing.length,other:other.length});await retLog('confirm_day',{source:'Xác nhận',day,mvd:`Ngày ${day}`,before:'Chưa',after:(sysRows.length&& !missing.length)?'Đủ':'Thiếu'});$('retDayModal').classList.add('hidden');await renderReturnMonthStats()}}
 async function retGlobalSearch(){
   const q=retClean($('retSearch')?.value||'');
   if(!q){$('retSearchResult').textContent='';return alert('Nhập mã vận đơn cần tìm.');}
