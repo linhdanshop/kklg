@@ -1,0 +1,83 @@
+name: Codex patch hang tra UI
+
+on:
+  push:
+    paths:
+      - .github/workflows/codex-patch-hangtra-ui-20260706.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Patch index.html
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          text = text.replace(
+          "    #hangtraPage .returnActionBtns{gap:0!important;justify-content:center!important}\n    #hangtraPage .returnActionBtns button{padding:3px 6px!important;font-size:13px!important}\n    @media (max-width:760px)",
+          "    #hangtraPage .returnActionBtns{gap:0!important;justify-content:center!important}\n    #hangtraPage .returnActionBtns button{padding:3px 6px!important;font-size:13px!important}\n    #hangtraPage .returnTable th{position:sticky;top:0;overflow:hidden;min-width:46px}\n    #hangtraPage .returnTable{table-layout:auto}\n    .retResizeHandle{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:8}\n    .retResizeHandle:hover{background:rgba(11,95,165,.25)}\n    @media (max-width:760px)"
+          )
+
+          text = text.replace(
+          "function renderReturnTables(){renderReturnSystem();renderReturnShop();renderReturnSummary()}",
+          "function renderReturnTables(){renderReturnSystem();renderReturnShop();renderReturnSummary();enableReturnTableResize()}"
+          )
+
+          text = text.replace(
+          "function retNoteInput(side,r){return `<input class=\"returnNoteInput\" data-ret-kind=\"${side}Note\" data-ret-id=\"${escapeAttr(r.id)}\" value=\"${escapeAttr(r.note||'')}\" ${side==='shop'&&!canEdit()?'disabled':''} ${side==='system'&&!isAdmin()?'disabled':''}>`}",
+          "function retNoteInput(side,r){return `<input class=\"returnNoteInput\" data-ret-kind=\"${side}Note\" data-ret-id=\"${escapeAttr(r.id)}\" value=\"${escapeAttr(r.note||'')}\" ${side==='shop'&&!canEdit()?'disabled':''} ${side==='system'&&!isAdmin()?'disabled':''}>`}\nfunction enableReturnTableResize(){\n  document.querySelectorAll('#hangtraPage .returnSystemTable,#hangtraPage .returnShopTable').forEach(table=>{\n    const ths=[...table.querySelectorAll('thead th')];\n    ths.forEach((th,idx)=>{\n      if(th.querySelector('.retResizeHandle'))return;\n      const handle=document.createElement('span');\n      handle.className='retResizeHandle';\n      handle.title='Kéo để đổi rộng cột';\n      th.appendChild(handle);\n      handle.addEventListener('mousedown',ev=>{\n        ev.preventDefault();ev.stopPropagation();\n        const startX=ev.clientX,startW=th.offsetWidth||80;\n        const onMove=e=>{\n          const w=Math.max(42,startW+e.clientX-startX);\n          th.style.width=w+'px';\n          table.querySelectorAll(`tr > *:nth-child(${idx+1})`).forEach(cell=>{cell.style.width=w+'px';cell.style.minWidth=w+'px'});\n        };\n        const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp)};\n        document.addEventListener('mousemove',onMove);\n        document.addEventListener('mouseup',onUp);\n      });\n    });\n  });\n}"
+          )
+
+          text = text.replace(
+          "    const parts=[`Tổng (${info.valid.length})`];\n    if(info.cnt['Quét mã'])parts.push(`Quét mã (${info.cnt['Quét mã']})`);\n    if(info.cnt['Nhập tay'])parts.push(`Nhập tay (${info.cnt['Nhập tay']})`);\n    if(info.cnt['Up file'])parts.push(`Up file (${info.cnt['Up file']})`);\n    if(info.other.length)parts.push(`Loại khác (${info.other.length})`);\n    return `<div class=\"returnStatLine\"><b>Ngày ${info.d} (<span class=\"${retStatusClass(info.status)}\">${info.status}</span>)</b>: ${parts.join(' ')}${who} <button data-ret-detail-day=\"${info.d}\">Xem</button></div>`",
+          "    const parts=[`Tổng (${info.valid.length})`];\n    if(info.cnt['Quét mã'])parts.push(`Quét mã (${info.cnt['Quét mã']})`);\n    if(info.cnt['Nhập tay'])parts.push(`Nhập tay (${info.cnt['Nhập tay']})`);\n    if(info.cnt['Up file'])parts.push(`Up file (${info.cnt['Up file']})`);\n    if(info.other.length)parts.push(`Loại khác (${info.other.length})`);\n    let pendingCheck='';\n    if(info.status==='Chưa làm'&&info.sysRows.length){\n      const diff=info.sysRows.length-info.valid.length;\n      pendingCheck=diff>0?` <button class=\"danger\" data-ret-detail-day=\"${info.d}\">Thiếu (${diff})</button>`:` <button class=\"green\" data-ret-detail-day=\"${info.d}\">Đủ (${Math.abs(diff)})</button>`;\n    }\n    return `<div class=\"returnStatLine\"><b>Ngày ${info.d} (<span class=\"${retStatusClass(info.status)}\">${info.status}</span>)</b>: ${parts.join(' ')}${who}${pendingCheck} <button data-ret-detail-day=\"${info.d}\">Xem</button></div>`"
+          )
+
+          text = text.replace(
+          "async function showReturnDayDetail(day){const [sys,shop,st]=await Promise.all([fbGet(`${retDayPath(day)}/system`),fbGet(`${retDayPath(day)}/shop`),fbGet(`${retBase()}/status/${day}`)]);const sysRows=Object.values(sys||{}),shopRows=Object.values(shop||{}),valid=retValidShopRows(shopRows),other=retOtherRows(shopRows),shopSet=new Set(valid.map(r=>retClean(r.mvd))),missing=sysRows.filter(r=>!shopSet.has(retClean(r.mvd))),status=retDayStatusLabel(day,sysRows.length,valid.length,st,shopRows.length,sysRows);$('retDayTitle').textContent=`Chi tiết ngày ${day} - ${retCarrierName()} - ${status}`;",
+          "async function showReturnDayDetail(day){const [sys,shop,st]=await Promise.all([fbGet(`${retDayPath(day)}/system`),fbGet(`${retDayPath(day)}/shop`),fbGet(`${retBase()}/status/${day}`)]);const sysRows=Object.values(sys||{}),shopRows=Object.values(shop||{}),valid=retValidShopRows(shopRows),other=retOtherRows(shopRows),shopSet=new Set(valid.map(r=>retClean(r.mvd))),missing=sysRows.filter(r=>!shopSet.has(retClean(r.mvd))),status=retDayStatusLabel(day,sysRows.length,valid.length,st,shopRows.length,sysRows),monthNo=Number(String(retState.month||retMonthNow()).split('-')[1]||0);$('retDayTitle').textContent=`Chi tiết ngày ${day}/${monthNo} - ${retCarrierName()} - ${status}`;"
+          )
+
+          required = ['enableReturnTableResize', 'retResizeHandle', 'pendingCheck', 'Chi tiết ngày ${day}/${monthNo}']
+          missing = [s for s in required if s not in text]
+          if missing:
+            raise SystemExit('Patch failed, missing markers: ' + ', '.join(missing))
+          if text == original:
+            print('No index.html changes needed')
+          else:
+            path.write_text(text, encoding='utf-8')
+            print('Patched index.html')
+          PY
+      - name: Check inline script syntax
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S)
+          Path('/tmp/index-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/index-inline.js
+      - name: Commit patch
+        run: |
+          git config user.name "codex-bot"
+          git config user.email "codex-bot@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "patch hang tra day detail and resizable columns"
+            git push
+          fi
