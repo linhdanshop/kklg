@@ -1221,8 +1221,20 @@ async function retImportSystemExcel(file){if(!isAdmin())return alert('Chỉ Admi
 async function retImportShopExcel(file){if(!isAdmin())return alert('Chỉ Admin được up file SHOP.');const codes=await retReadMvdExcel(file);await retAddMany('shop',codes,'Up file');setMsg(`Đã up file SHOP: ${file.name}`)}
 async function retReadMvdExcel(file){const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});const keys=['mvd','ma van don','mã vận đơn','mã đơn','ma don','tracking','bill','awb'];let col=-1;for(let r=0;r<Math.min(12,aoa.length);r++){(aoa[r]||[]).forEach((v,i)=>{const h=norm(v);if(col<0&&keys.some(k=>h===k||h.includes(k)))col=i});if(col>=0)return retUniqueCodes(aoa.slice(r+1).map(row=>row[col]))}let best={col:0,count:0},max=Math.max(...aoa.slice(0,100).map(r=>r.length),1);for(let c=0;c<max;c++){let cnt=0;for(let r=0;r<Math.min(300,aoa.length);r++){const v=retClean(aoa[r]?.[c]);if(v&&/[0-9]{5,}/.test(v))cnt++}if(cnt>best.count)best={col:c,count:cnt}}return retUniqueCodes(aoa.map(row=>row[best.col]))}
 function retExportFileName(prefix,day=retState.day){const carrier=retCarrierName().replace(/[^\w\-]+/g,'_'),month=String(retState.month||retMonthNow()).replace(/[^0-9\-]/g,'');return `${prefix}_${carrier}_${month}_ngay_${day}.xlsx`}
-function retWriteXlsx(fileName,headers,rows,sheetName='Hang tra'){
-  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+function retExportDayText(day=retState.day){const parts=String(retState.month||retMonthNow()).split('-'),y=parts[0]||'',m=Number(parts[1]||0)||'';return `Ngày ${Number(day)||''}/${m}/${y}`}
+function retExportMeta(title,day=retState.day,lines=[]){const month=String(retState.month||retMonthNow());return {title:`${title} - ${retCarrierName()} - ${retExportDayText(day)}`,lines:[`ĐVVC: ${retCarrierName()} | Tháng: ${month} | ${retExportDayText(day)}`,...(lines||[]),`Xuất lúc: ${retFormatTime(nowStamp())}`]}}
+function retWriteXlsx(fileName,headers,rows,sheetName='Hang tra',meta={}){
+  const titleRows=[];
+  if(meta&&meta.title)titleRows.push([meta.title]);
+  (meta&&meta.lines?meta.lines:[]).forEach(line=>titleRows.push([line]));
+  if(titleRows.length)titleRows.push([]);
+  const aoa=[...titleRows,headers,...rows];
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet(aoa);
+  const maxCol=Math.max(headers.length-1,0);
+  if(titleRows.length){
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:maxCol}}];
+    for(let r=1;r<titleRows.length-1;r++)ws['!merges'].push({s:{r:r,c:0},e:{r:r,c:maxCol}});
+  }
   ws['!cols']=headers.map((h,i)=>({wch:Math.min(45,Math.max(12,String(h||'').length+4,...rows.slice(0,1000).map(r=>String(r[i]??'').length+2)))}));
   XLSX.utils.book_append_sheet(wb,ws,sheetName);
   XLSX.writeFile(wb,fileName);
@@ -1231,19 +1243,19 @@ function retExportCurrentList(side){
   if(side==='system'){
     const rows=retSortedRows(retState.system.filter(retRowMatches));
     if(!rows.length)return alert('Không có dữ liệu hệ thống để xuất.');
-    retWriteXlsx(retExportFileName('hang_tra_he_thong'),['STT','MVD Hệ Thống','Thời gian','Nguồn','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.source||'',r.createdBy||'']),'He thong');
+    retWriteXlsx(retExportFileName('hang_tra_he_thong'),['STT','MVD Hệ Thống','Thời gian','Nguồn','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.source||'',r.createdBy||'']),'He thong',retExportMeta('DANH SÁCH TRẢ HÀNG TRÊN HỆ THỐNG GH',retState.day,[`Tổng hệ thống: ${rows.length} mã`]));
     return;
   }
   const normal=retSortedRows(retValidShopRows(retState.shop).filter(retRowMatches));
   const other=retSortedRows(retOtherRows(retState.shop).filter(retRowMatches));
   const rows=[...normal,...other];
   if(!rows.length)return alert('Không có dữ liệu SHOP để xuất.');
-  retWriteXlsx(retExportFileName('hang_tra_shop'),['STT','Shop đã nhận','Thời gian','Ghi chú','Loại','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.note||'',r.type==='other'?'Loại Khác':(r.source||''),r.createdBy||'']),'SHOP');
+  retWriteXlsx(retExportFileName('hang_tra_shop'),['STT','Shop đã nhận','Thời gian','Ghi chú','Loại','Người tạo'],rows.map((r,i)=>[i+1,r.mvd||'',retFormatTime(r.createdAt),r.note||'',r.type==='other'?'Loại Khác':(r.source||''),r.createdBy||'']),'SHOP',retExportMeta('SỐ LƯỢNG BÀN GIAO CHO SHOP',retState.day,[`Bàn giao: ${normal.length} | Loại khác: ${other.length} | Tổng xuất: ${rows.length}`]));
 }
 function retExportMissingRows(day,sysRows,valid,missing,other,status){
   if(!(missing||[]).length)return alert('Ngày này không có mã thiếu để xuất.');
   const rows=(missing||[]).map((r,i)=>[i+1,r.mvd||'',day,retCarrierName(),status||'',sysRows.length,valid.length,other.length,retFormatTime(r.createdAt),r.source||'',r.createdBy||'']);
-  retWriteXlsx(retExportFileName('hang_tra_thieu',day),['STT','MVD thiếu trong SHOP','Ngày','ĐVVC','Trạng thái','Hệ thống','SHOP','Loại khác','Thời gian hệ thống','Nguồn','Người tạo'],rows,'Thieu');
+  retWriteXlsx(retExportFileName('hang_tra_thieu',day),['STT','MVD thiếu trong SHOP','Ngày','ĐVVC','Trạng thái','Hệ thống','SHOP','Loại khác','Thời gian hệ thống','Nguồn','Người tạo'],rows,'Thieu',retExportMeta('DANH SÁCH THIẾU TRONG SHOP',day,[`Trạng thái: ${status||''} | Hệ thống: ${sysRows.length} | SHOP: ${valid.length} | Thiếu: ${(missing||[]).length} | Loại khác: ${other.length}`]));
 }
 async function retDeleteRow(side,id){const rows=side==='system'?retState.system:retState.shop,row=rows.find(r=>r.id===id);if(!row)return;if(side==='system'&&!isAdmin())return alert('Chỉ Admin được xóa hệ thống.');if(side==='shop'&&!isAdmin()&&row.source==='Up file')return alert('Nhân viên không được xóa dòng Up file.');const sameShop=side==='system'?retState.shop.filter(r=>retClean(r.mvd)===retClean(row.mvd)):[];if(side==='system'&&sameShop.length){if(!confirm(`Mã ${row.mvd} đang có bên SHOP (${sameShop.length} dòng). Nếu xóa hệ thống sẽ xóa luôn cả bên SHOP. Tiếp tục?`))return;const u={};u[`${retDayPath()}/system/${id}`]=null;sameShop.forEach(s=>u[`${retDayPath()}/shop/${s.id}`]=null);await fbMultiUpdate(u);retState.system=retState.system.filter(r=>r.id!==id);retState.shop=retState.shop.filter(r=>retClean(r.mvd)!==retClean(row.mvd));if(!retState.system.length)await fbSet(`${retBase()}/status/${retState.day}`,null);await retLog('delete_system_with_shop',{source:'Xóa hệ thống + SHOP',mvd:row.mvd,before:`SHOP ${sameShop.length} dòng`,after:'Đã xóa'});renderReturnTables();retRefreshMonthStatsSoon();return}if(!confirm(`Xóa mã ${row.mvd}?`))return;await fbSet(`${retDayPath()}/${side}/${id}`,null);if(side==='system')retState.system=retState.system.filter(r=>r.id!==id);else retState.shop=retState.shop.filter(r=>r.id!==id);if(side==='system'&&!retState.system.length)await fbSet(`${retBase()}/status/${retState.day}`,null);await retLog(`delete_${side}`,{source:row.source,mvd:row.mvd});renderReturnTables();retRefreshMonthStatsSoon()}
 async function retClearSide(side){
