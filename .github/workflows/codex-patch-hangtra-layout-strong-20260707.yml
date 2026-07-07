@@ -1,0 +1,59 @@
+name: Codex patch hang tra strong layout
+
+on:
+  push:
+    paths:
+      - .github/workflows/codex-patch-hangtra-layout-strong-20260707.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Patch return grid strongly
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          # Replace any previous desktop return-grid ratio with a visibly narrower system panel.
+          import re
+          text = re.sub(r'\.returnGrid\{display:grid;grid-template-columns:[^}]+?;gap:8px;padding:8px;background:#fff\}',
+                        '.returnGrid{display:grid;grid-template-columns:470px minmax(820px,1fr) 480px;gap:8px;padding:8px;background:#fff}', text, count=1)
+
+          # Add a late, scoped override because the file has repeated Hàng trả CSS blocks.
+          marker = '#hangtraPage .returnOtherTableBox{max-height:160px;overflow:auto}'
+          override = marker + '\n    #hangtraPage .returnGrid{grid-template-columns:470px minmax(820px,1fr) 480px!important}\n    #hangtraPage .returnPanel:first-child{width:470px!important;max-width:470px!important}\n    #hangtraPage .returnSystemTable{min-width:464px!important}\n    #hangtraPage .returnSystemTable col:nth-child(1){width:54px!important}\n    #hangtraPage .returnSystemTable col:nth-child(2){width:185px!important}\n    #hangtraPage .returnSystemTable col:nth-child(3){width:145px!important}\n    #hangtraPage .returnSystemTable col:nth-child(4){width:80px!important}\n    #hangtraPage .returnShopTable col:nth-child(4),#hangtraPage .returnOtherTable col:nth-child(4){width:190px!important}\n'
+          if marker in text and 'returnPanel:first-child{width:470px!important' not in text:
+              text = text.replace(marker, override, 1)
+
+          required = ['grid-template-columns:470px minmax(820px,1fr) 480px', 'returnPanel:first-child{width:470px!important', 'returnSystemTable col:nth-child(2){width:185px!important']
+          missing = [s for s in required if s not in text]
+          if missing:
+              raise SystemExit('Patch failed, missing markers: ' + ', '.join(missing))
+          if text == original:
+              print('No index.html changes needed')
+          else:
+              path.write_text(text, encoding='utf-8')
+              print('Patched strong hang tra layout')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "codex-bot"
+          git config user.email "codex-bot@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "make hang tra shop panel wider"
+            git push
+          fi
