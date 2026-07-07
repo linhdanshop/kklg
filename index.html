@@ -157,19 +157,20 @@ button:disabled,input:disabled,select:disabled,textarea:disabled,.btn.disabledAc
 }
 
 /* HANG TRA FINAL LAYOUT FIX 2026-07-07 BEGIN */
-#hangtraPage .returnGrid{display:grid!important;grid-template-columns:500px 7px minmax(720px,1fr) 7px 660px!important;gap:4px!important;padding:6px!important;background:#fff!important;align-items:stretch!important}
+#hangtraPage .returnGrid{display:grid!important;grid-template-columns:var(--ret-system-w,420px) 6px minmax(620px,1fr) 6px var(--ret-stats-w,760px)!important;gap:4px!important;padding:6px!important;background:#fff!important;align-items:stretch!important}
 #hangtraPage .returnGrid>.returnPanel{min-width:0!important;width:auto!important;max-width:none!important}
 #hangtraPage .returnGrid>.retSystemPanel{grid-column:1!important;grid-row:1!important}
 #hangtraPage .returnGrid>.retGridResizerLeft{grid-column:2!important;grid-row:1!important}
 #hangtraPage .returnGrid>.retShopPanel{grid-column:3!important;grid-row:1!important}
 #hangtraPage .returnGrid>.retGridResizerRight{grid-column:4!important;grid-row:1!important}
 #hangtraPage .returnGrid>.retStatsPanel{grid-column:5!important;grid-row:1!important}
-#hangtraPage .retGridResizer{display:block!important;width:7px!important;min-width:7px!important;min-height:520px!important;cursor:col-resize!important;background:#cbd5e1!important;border-left:1px solid #b8c2cf!important;border-right:1px solid #f8fafc!important;border-radius:5px!important}
+#hangtraPage .retGridResizer{display:block!important;width:6px!important;min-width:6px!important;min-height:520px!important;cursor:col-resize!important;background:#cbd5e1!important;border-left:1px solid #b8c2cf!important;border-right:1px solid #f8fafc!important;border-radius:4px!important}
 #hangtraPage .retGridResizer:hover,#hangtraPage .retGridResizer.active{background:#0b5fa5!important}
 #hangtraPage .returnStatLine{white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;line-height:1.28!important}
 #hangtraPage .returnStatLine button{margin-left:4px!important}
 #hangtraPage .returnSystemTable,#hangtraPage .returnShopTable{table-layout:fixed!important;width:max-content!important;min-width:100%!important}
 #hangtraPage .returnTableBox{overflow:auto!important}
+@media (max-width:1500px){#hangtraPage .returnGrid{grid-template-columns:minmax(340px,var(--ret-system-w,380px)) 6px minmax(540px,1fr) 6px minmax(620px,var(--ret-stats-w,680px))!important}}
 @media (max-width:760px){#hangtraPage .retGridResizer{display:none!important}#hangtraPage .returnGrid{grid-template-columns:1fr!important;gap:5px!important}#hangtraPage .returnGrid>.returnPanel{grid-column:auto!important;grid-row:auto!important}}
 /* HANG TRA FINAL LAYOUT FIX 2026-07-07 END */
 </style>
@@ -1136,10 +1137,10 @@ function setupReturnPanelResizers(){
   if(!left){left=document.createElement('div');left.className='retGridResizer retGridResizerLeft';left.title='Kéo để đổi rộng khung GH / SHOP';panels[0].after(left)}
   let right=grid.querySelector('.retGridResizerRight');
   if(!right){right=document.createElement('div');right.className='retGridResizer retGridResizerRight';right.title='Kéo để đổi rộng khung SHOP / Thống kê';panels[1].after(right)}
-  if(!grid.dataset.retPanelSizeLoaded){grid.dataset.retPanelSizeLoaded='1';try{const sw=parseInt(localStorage.getItem('KKLG_RET_SYSTEM_W')||'',10);const tw=parseInt(localStorage.getItem('KKLG_RET_STATS_W')||'',10);if(Number.isFinite(sw))grid.style.setProperty('--ret-system-w',Math.max(420,Math.min(680,sw))+'px');if(Number.isFinite(tw))grid.style.setProperty('--ret-stats-w',Math.max(540,Math.min(820,tw))+'px')}catch(e){}}
+  if(!grid.dataset.retPanelSizeLoaded){grid.dataset.retPanelSizeLoaded='1';try{const sw=parseInt(localStorage.getItem('KKLG_RET_SYSTEM_W_V2')||'',10);const tw=parseInt(localStorage.getItem('KKLG_RET_STATS_W_V2')||'',10);if(Number.isFinite(sw))grid.style.setProperty('--ret-system-w',Math.max(340,Math.min(620,sw))+'px');if(Number.isFinite(tw))grid.style.setProperty('--ret-stats-w',Math.max(620,Math.min(900,tw))+'px')}catch(e){}}
   const readPx=(name,fallback)=>{const raw=getComputedStyle(grid).getPropertyValue(name).trim();const n=parseInt(raw,10);return Number.isFinite(n)?n:fallback};
   const savePx=(key,val)=>{try{localStorage.setItem(key,String(val))}catch(e){}};
-  const bind=(handle,side)=>{if(!handle||handle.dataset.bound)return;handle.dataset.bound='1';handle.addEventListener('mousedown',ev=>{ev.preventDefault();ev.stopPropagation();const startX=ev.clientX,startSystem=readPx('--ret-system-w',500),startStats=readPx('--ret-stats-w',660);handle.classList.add('active');document.body.style.cursor='col-resize';document.body.style.userSelect='none';const onMove=e=>{const dx=e.clientX-startX;if(side==='left'){const next=Math.max(420,Math.min(680,startSystem+dx));grid.style.setProperty('--ret-system-w',next+'px');savePx('KKLG_RET_SYSTEM_W',next)}else{const next=Math.max(540,Math.min(820,startStats-dx));grid.style.setProperty('--ret-stats-w',next+'px');savePx('KKLG_RET_STATS_W',next)}};const onUp=()=>{handle.classList.remove('active');document.body.style.cursor='';document.body.style.userSelect='';document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp)};document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp)});};
+  const bind=(handle,side)=>{if(!handle||handle.dataset.bound)return;handle.dataset.bound='1';handle.addEventListener('mousedown',ev=>{ev.preventDefault();ev.stopPropagation();const startX=ev.clientX,startSystem=readPx('--ret-system-w',420),startStats=readPx('--ret-stats-w',760);handle.classList.add('active');document.body.style.cursor='col-resize';document.body.style.userSelect='none';const onMove=e=>{const dx=e.clientX-startX;if(side==='left'){const next=Math.max(340,Math.min(620,startSystem+dx));grid.style.setProperty('--ret-system-w',next+'px');savePx('KKLG_RET_SYSTEM_W_V2',next)}else{const next=Math.max(620,Math.min(900,startStats-dx));grid.style.setProperty('--ret-stats-w',next+'px');savePx('KKLG_RET_STATS_W_V2',next)}};const onUp=()=>{handle.classList.remove('active');document.body.style.cursor='';document.body.style.userSelect='';document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp)};document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp)});};
   bind(left,'left');bind(right,'right');
 }
 function renderReturnTables(){setupReturnPanelResizers();renderReturnSystem();renderReturnShop();renderReturnSummary();enableReturnTableResize()}
