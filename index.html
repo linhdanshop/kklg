@@ -155,6 +155,23 @@ button:disabled,input:disabled,select:disabled,textarea:disabled,.btn.disabledAc
   #hangtraPage .returnTableBox{flex:1;min-height:0!important;height:auto!important}
   #hangtraPage .returnStatBox{flex:1;min-height:0!important;max-height:none!important}
 }
+
+/* HANG TRA FINAL LAYOUT FIX 2026-07-07 BEGIN */
+#hangtraPage .returnGrid{display:grid!important;grid-template-columns:500px 7px minmax(720px,1fr) 7px 660px!important;gap:4px!important;padding:6px!important;background:#fff!important;align-items:stretch!important}
+#hangtraPage .returnGrid>.returnPanel{min-width:0!important;width:auto!important;max-width:none!important}
+#hangtraPage .returnGrid>.retSystemPanel{grid-column:1!important;grid-row:1!important}
+#hangtraPage .returnGrid>.retGridResizerLeft{grid-column:2!important;grid-row:1!important}
+#hangtraPage .returnGrid>.retShopPanel{grid-column:3!important;grid-row:1!important}
+#hangtraPage .returnGrid>.retGridResizerRight{grid-column:4!important;grid-row:1!important}
+#hangtraPage .returnGrid>.retStatsPanel{grid-column:5!important;grid-row:1!important}
+#hangtraPage .retGridResizer{display:block!important;width:7px!important;min-width:7px!important;min-height:520px!important;cursor:col-resize!important;background:#cbd5e1!important;border-left:1px solid #b8c2cf!important;border-right:1px solid #f8fafc!important;border-radius:5px!important}
+#hangtraPage .retGridResizer:hover,#hangtraPage .retGridResizer.active{background:#0b5fa5!important}
+#hangtraPage .returnStatLine{white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;line-height:1.28!important}
+#hangtraPage .returnStatLine button{margin-left:4px!important}
+#hangtraPage .returnSystemTable,#hangtraPage .returnShopTable{table-layout:fixed!important;width:max-content!important;min-width:100%!important}
+#hangtraPage .returnTableBox{overflow:auto!important}
+@media (max-width:760px){#hangtraPage .retGridResizer{display:none!important}#hangtraPage .returnGrid{grid-template-columns:1fr!important;gap:5px!important}#hangtraPage .returnGrid>.returnPanel{grid-column:auto!important;grid-row:auto!important}}
+/* HANG TRA FINAL LAYOUT FIX 2026-07-07 END */
 </style>
 </head>
 <body>
@@ -1114,7 +1131,7 @@ function setupReturnPanelResizers(){
   const grid=document.querySelector('#hangtraPage .returnGrid');
   if(!grid)return;
   const panels=[...grid.children].filter(el=>el&&el.classList&&el.classList.contains('returnPanel'));
-  if(panels.length<3)return;
+  if(panels.length<3)return;panels[0].classList.add('retSystemPanel');panels[1].classList.add('retShopPanel');panels[2].classList.add('retStatsPanel');
   let left=grid.querySelector('.retGridResizerLeft');
   if(!left){left=document.createElement('div');left.className='retGridResizer retGridResizerLeft';left.title='Kéo để đổi rộng khung GH / SHOP';panels[0].after(left)}
   let right=grid.querySelector('.retGridResizerRight');
