@@ -2,6 +2,9 @@ name: manual fix hangtra layout 20260707
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/codex-manual-fix-hangtra-layout-20260707.yml'
 
 permissions:
   contents: write
@@ -11,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch HANG TRA layout
+      - name: Patch HANG TRA final layout override
         shell: bash
         run: |
           python - <<'PY'
@@ -20,61 +23,54 @@ jobs:
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
           orig = s
-          old = '.returnGrid{display:grid;grid-template-columns:minmax(540px,.9fr) minmax(760px,1.35fr) minmax(500px,.95fr);gap:8px;padding:8px;background:#fff}'
-          new = '.returnGrid{display:grid;grid-template-columns:var(--ret-system-w,500px) 7px minmax(720px,1fr) 7px var(--ret-stats-w,660px);gap:0;padding:8px;background:#fff}'
-          s = s.replace(old, new)
-          s = re.sub(r"\n\s*#hangtraPage \.returnGrid\{grid-template-columns:minmax\(540px,\.9fr\) minmax\(760px,1\.35fr\) minmax\(500px,\.95fr\)!important;align-items:stretch\}", "", s)
-          s = re.sub(r"\n\s*#hangtraPage \.returnGrid\{grid-template-columns:minmax\(540px,\.9fr\) minmax\(760px,1\.35fr\) minmax\(500px,\.95fr\)!important\}", "", s)
-          s = re.sub(r"\n\s*#hangtraPage \.returnSystemTable th:nth-child\(2\).*?#hangtraPage \.returnNoteInput\{min-width:0!important\}", "\n    #hangtraPage .returnNoteInput{min-width:0!important}", s, flags=re.S)
-          css_lines = [
-              "    #hangtraPage .returnGrid{grid-template-columns:var(--ret-system-w,500px) 7px minmax(720px,1fr) 7px var(--ret-stats-w,660px)!important;gap:4px!important;align-items:stretch}",
-              "    #hangtraPage .returnPanel{min-width:0}",
-              "    #hangtraPage .returnSystemTable{min-width:100%}",
-              "    #hangtraPage .retGridResizer{cursor:col-resize;background:#d7dee8;border-left:1px solid #b8c2cf;border-right:1px solid #f8fafc;border-radius:5px;min-height:100%;transition:background .12s}",
-              "    #hangtraPage .retGridResizer:hover,#hangtraPage .retGridResizer.active{background:#0b5fa5}",
-              "    #hangtraPage .returnStatLine{white-space:nowrap;overflow:visible;text-overflow:clip}",
-              "    #hangtraPage .returnStatLine button{margin-left:4px}",
+
+          # Make the panel-resizer JS assign stable classes to the three panels.
+          needle = "if(panels.length<3)return;"
+          repl = "if(panels.length<3)return;panels[0].classList.add('retSystemPanel');panels[1].classList.add('retShopPanel');panels[2].classList.add('retStatsPanel');"
+          if needle in s and repl not in s:
+              s = s.replace(needle, repl, 1)
+
+          # Ensure render creates panel resizers before table rendering.
+          s = s.replace('function renderReturnTables(){renderReturnSystem();renderReturnShop();renderReturnSummary();enableReturnTableResize()}', 'function renderReturnTables(){setupReturnPanelResizers();renderReturnSystem();renderReturnShop();renderReturnSummary();enableReturnTableResize()}')
+
+          # Remove prior final override from this workflow, then append a stronger final CSS block after old patches.
+          begin = '/* HANG TRA FINAL LAYOUT FIX 2026-07-07 BEGIN */'
+          end = '/* HANG TRA FINAL LAYOUT FIX 2026-07-07 END */'
+          s = re.sub(r'\n\s*/\* HANG TRA FINAL LAYOUT FIX 2026-07-07 BEGIN \*/.*?/\* HANG TRA FINAL LAYOUT FIX 2026-07-07 END \*/\n?', '\n', s, flags=re.S)
+          css = [
+              '',
+              begin,
+              '#hangtraPage .returnGrid{display:grid!important;grid-template-columns:500px 7px minmax(720px,1fr) 7px 660px!important;gap:4px!important;padding:6px!important;background:#fff!important;align-items:stretch!important}',
+              '#hangtraPage .returnGrid>.returnPanel{min-width:0!important;width:auto!important;max-width:none!important}',
+              '#hangtraPage .returnGrid>.retSystemPanel{grid-column:1!important;grid-row:1!important}',
+              '#hangtraPage .returnGrid>.retGridResizerLeft{grid-column:2!important;grid-row:1!important}',
+              '#hangtraPage .returnGrid>.retShopPanel{grid-column:3!important;grid-row:1!important}',
+              '#hangtraPage .returnGrid>.retGridResizerRight{grid-column:4!important;grid-row:1!important}',
+              '#hangtraPage .returnGrid>.retStatsPanel{grid-column:5!important;grid-row:1!important}',
+              '#hangtraPage .retGridResizer{display:block!important;width:7px!important;min-width:7px!important;min-height:520px!important;cursor:col-resize!important;background:#cbd5e1!important;border-left:1px solid #b8c2cf!important;border-right:1px solid #f8fafc!important;border-radius:5px!important}',
+              '#hangtraPage .retGridResizer:hover,#hangtraPage .retGridResizer.active{background:#0b5fa5!important}',
+              '#hangtraPage .returnStatLine{white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;line-height:1.28!important}',
+              '#hangtraPage .returnStatLine button{margin-left:4px!important}',
+              '#hangtraPage .returnSystemTable,#hangtraPage .returnShopTable{table-layout:fixed!important;width:max-content!important;min-width:100%!important}',
+              '#hangtraPage .returnTableBox{overflow:auto!important}',
+              '@media (max-width:760px){#hangtraPage .retGridResizer{display:none!important}#hangtraPage .returnGrid{grid-template-columns:1fr!important;gap:5px!important}#hangtraPage .returnGrid>.returnPanel{grid-column:auto!important;grid-row:auto!important}}',
+              end,
+              ''
           ]
-          panel_css = "\n".join(css_lines) + "\n"
-          if '#hangtraPage .retGridResizer' not in s:
-              marker = '    .retResizeHandle:hover{background:rgba(11,95,165,.25)}\n'
-              if marker not in s:
-                  raise SystemExit('CSS marker not found')
-              s = s.replace(marker, marker + panel_css, 1)
-          s = s.replace('@media (max-width:760px){.returnGrid{grid-template-columns:1fr;padding:5px}', '@media (max-width:760px){#hangtraPage .retGridResizer{display:none!important}.returnGrid{grid-template-columns:1fr!important;padding:5px}')
-          js_lines = [
-              "function setupReturnPanelResizers(){",
-              "  const grid=document.querySelector('#hangtraPage .returnGrid');",
-              "  if(!grid)return;",
-              "  const panels=[...grid.children].filter(el=>el&&el.classList&&el.classList.contains('returnPanel'));",
-              "  if(panels.length<3)return;",
-              "  let left=grid.querySelector('.retGridResizerLeft');",
-              "  if(!left){left=document.createElement('div');left.className='retGridResizer retGridResizerLeft';left.title='Kéo để đổi rộng khung GH / SHOP';panels[0].after(left)}",
-              "  let right=grid.querySelector('.retGridResizerRight');",
-              "  if(!right){right=document.createElement('div');right.className='retGridResizer retGridResizerRight';right.title='Kéo để đổi rộng khung SHOP / Thống kê';panels[1].after(right)}",
-              "  if(!grid.dataset.retPanelSizeLoaded){grid.dataset.retPanelSizeLoaded='1';try{const sw=parseInt(localStorage.getItem('KKLG_RET_SYSTEM_W')||'',10);const tw=parseInt(localStorage.getItem('KKLG_RET_STATS_W')||'',10);if(Number.isFinite(sw))grid.style.setProperty('--ret-system-w',Math.max(420,Math.min(680,sw))+'px');if(Number.isFinite(tw))grid.style.setProperty('--ret-stats-w',Math.max(540,Math.min(820,tw))+'px')}catch(e){}}",
-              "  const readPx=(name,fallback)=>{const raw=getComputedStyle(grid).getPropertyValue(name).trim();const n=parseInt(raw,10);return Number.isFinite(n)?n:fallback};",
-              "  const savePx=(key,val)=>{try{localStorage.setItem(key,String(val))}catch(e){}};",
-              "  const bind=(handle,side)=>{if(!handle||handle.dataset.bound)return;handle.dataset.bound='1';handle.addEventListener('mousedown',ev=>{ev.preventDefault();ev.stopPropagation();const startX=ev.clientX,startSystem=readPx('--ret-system-w',500),startStats=readPx('--ret-stats-w',660);handle.classList.add('active');document.body.style.cursor='col-resize';document.body.style.userSelect='none';const onMove=e=>{const dx=e.clientX-startX;if(side==='left'){const next=Math.max(420,Math.min(680,startSystem+dx));grid.style.setProperty('--ret-system-w',next+'px');savePx('KKLG_RET_SYSTEM_W',next)}else{const next=Math.max(540,Math.min(820,startStats-dx));grid.style.setProperty('--ret-stats-w',next+'px');savePx('KKLG_RET_STATS_W',next)}};const onUp=()=>{handle.classList.remove('active');document.body.style.cursor='';document.body.style.userSelect='';document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp)};document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp)});};",
-              "  bind(left,'left');bind(right,'right');",
-              "}",
-          ]
-          js_func = "\n" + "\n".join(js_lines) + "\n"
-          target = 'function renderReturnTables(){renderReturnSystem();renderReturnShop();renderReturnSummary();enableReturnTableResize()}'
-          if 'function setupReturnPanelResizers(){' not in s:
-              if target not in s:
-                  raise SystemExit('renderReturnTables marker not found')
-              s = s.replace(target, js_func + target, 1)
-          s = s.replace(target, 'function renderReturnTables(){setupReturnPanelResizers();renderReturnSystem();renderReturnShop();renderReturnSummary();enableReturnTableResize()}')
-          s = s.replace("const preset=table.classList.contains('returnSystemTable')?[50,195,135,76]:[54,210,145,200,90,80];", "const preset=table.classList.contains('returnSystemTable')?[46,188,128,72]:[50,205,140,210,86,72];")
-          missing = [x for x in ['retGridResizer','setupReturnPanelResizers','var(--ret-system-w,500px) 7px minmax(720px,1fr) 7px var(--ret-stats-w,660px)'] if x not in s]
+          block = '\n'.join(css)
+          if '</style>' not in s:
+              raise SystemExit('style close marker not found')
+          s = s.replace('</style>', block + '</style>', 1)
+
+          required = ['retSystemPanel', 'retStatsPanel', begin, 'grid-template-columns:500px 7px minmax(720px,1fr) 7px 660px']
+          missing = [x for x in required if x not in s]
           if missing:
-              raise SystemExit('Missing markers: '+', '.join(missing))
+              raise SystemExit('Missing markers: ' + ', '.join(missing))
           if s == orig:
-              print('No changes; already patched')
+              print('No changes; final layout already patched')
           else:
               p.write_text(s, encoding='utf-8')
-              print('Patched index.html')
+              print('Patched final HANG TRA layout override')
           PY
       - name: Commit and push
         shell: bash
@@ -86,5 +82,5 @@ jobs:
           git config user.name "codex-bot"
           git config user.email "codex-bot@users.noreply.github.com"
           git add index.html
-          git commit -m "fix hang tra resizable layout"
+          git commit -m "fix hang tra final panel layout"
           git push
