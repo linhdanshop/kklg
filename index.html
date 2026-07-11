@@ -211,21 +211,28 @@ function initFirebase(){try{firebase.initializeApp(APP_CONFIG.firebaseConfig);db
 
 const AUTH_SESSION_KEY='KKLG_AUTH_SESSION';
 const STAFF_SESSION_KEY='KKLG_STAFF_SESSION';
+const AUTH_REDIRECT_PENDING_KEY='KKLG_AUTH_REDIRECT_PENDING';
+function storageGet(key){try{return localStorage.getItem(key)}catch(e){return null}}
+function storageSet(key,val){try{localStorage.setItem(key,val);return true}catch(e){console.warn('localStorage set failed:',key,e&&e.message?e.message:e);return false}}
+function storageRemove(key){try{localStorage.removeItem(key)}catch(e){}}
+function markAuthRedirectPending(){storageSet(AUTH_REDIRECT_PENDING_KEY,JSON.stringify({startedAt:Date.now()}))}
+function consumeAuthRedirectPending(){const raw=storageGet(AUTH_REDIRECT_PENDING_KEY);storageRemove(AUTH_REDIRECT_PENDING_KEY);if(!raw)return false;try{const data=JSON.parse(raw);return !!(data&&data.startedAt&&Date.now()-data.startedAt<10*60*1000)}catch(e){return true}}
+function isRecentFirebaseSignIn(user,windowMs=10*60*1000){try{const raw=user&&user.metadata&&(user.metadata.lastSignInTime||user.metadata.lastLoginAt);const t=raw?Date.parse(raw):0;return !!(t&&Date.now()-t<windowMs)}catch(e){return false}}
 function normEmail(e){return String(e||'').trim().toLowerCase()}
 function authUser(){return auth&&auth.currentUser?auth.currentUser:null}
 function authEmail(){return normEmail(authUser()?.email||'')}
 function isAdminEmail(email){email=normEmail(email);return (APP_CONFIG.adminEmails||[]).map(normEmail).includes(email)}
 function isStaffEmail(email){email=normEmail(email);return (APP_CONFIG.staffEmails||[]).map(normEmail).includes(email)}
 function isAllowedEmail(email){return isAdminEmail(email)||isStaffEmail(email)}
-function authSessionValid(){try{const raw=JSON.parse(localStorage.getItem(AUTH_SESSION_KEY)||'null');if(!raw||!raw.expiresAt)return false;if(Date.now()>raw.expiresAt){localStorage.removeItem(AUTH_SESSION_KEY);return false}return true}catch(e){return false}}
-function saveAuthSession(email){localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({email:normEmail(email),expiresAt:Date.now()+APP_CONFIG.loginRememberMs,loginAt:new Date().toISOString()}))}
-function clearAuthSession(){localStorage.removeItem(AUTH_SESSION_KEY);localStorage.removeItem(STAFF_SESSION_KEY);localStorage.removeItem('KKLG_USER')}
-function savedStaffSession(){try{const raw=JSON.parse(localStorage.getItem(STAFF_SESSION_KEY)||'null');if(!raw)return null;if(raw.expiresAt&&Date.now()>raw.expiresAt){localStorage.removeItem(STAFF_SESSION_KEY);return null}return raw}catch(e){return null}}
-function saveStaffSession(name){localStorage.setItem(STAFF_SESSION_KEY,JSON.stringify({name,expiresAt:Date.now()+APP_CONFIG.staffSelectRememberMs,selectedAt:new Date().toISOString()}))}
-function savedUser(){try{const raw=JSON.parse(localStorage.getItem('KKLG_USER')||'null');if(!raw)return null;const exp=raw.expiresAt||0;if(exp&&Date.now()>exp){localStorage.removeItem('KKLG_USER');return null}return raw}catch(e){return null}}
-function persistUser(u){appUser=u;if(u)localStorage.setItem('KKLG_USER',JSON.stringify({...u,expiresAt:Date.now()+APP_CONFIG.loginRememberMs}));else localStorage.removeItem('KKLG_USER')}
+function authSessionValid(email=''){try{const raw=JSON.parse(storageGet(AUTH_SESSION_KEY)||'null');if(!raw||!raw.expiresAt)return false;if(email&&raw.email&&normEmail(raw.email)!==normEmail(email))return false;if(Date.now()>raw.expiresAt){storageRemove(AUTH_SESSION_KEY);return false}return true}catch(e){return false}}
+function saveAuthSession(email){storageSet(AUTH_SESSION_KEY,JSON.stringify({email:normEmail(email),expiresAt:Date.now()+APP_CONFIG.loginRememberMs,loginAt:new Date().toISOString()}))}
+function clearAuthSession(){storageRemove(AUTH_SESSION_KEY);storageRemove(STAFF_SESSION_KEY);storageRemove('KKLG_USER');storageRemove(AUTH_REDIRECT_PENDING_KEY)}
+function savedStaffSession(){try{const raw=JSON.parse(storageGet(STAFF_SESSION_KEY)||'null');if(!raw)return null;if(raw.expiresAt&&Date.now()>raw.expiresAt){storageRemove(STAFF_SESSION_KEY);return null}return raw}catch(e){return null}}
+function saveStaffSession(name){storageSet(STAFF_SESSION_KEY,JSON.stringify({name,expiresAt:Date.now()+APP_CONFIG.staffSelectRememberMs,selectedAt:new Date().toISOString()}))}
+function savedUser(){try{const raw=JSON.parse(storageGet('KKLG_USER')||'null');if(!raw)return null;const exp=raw.expiresAt||0;if(exp&&Date.now()>exp){storageRemove('KKLG_USER');return null}return raw}catch(e){return null}}
+function persistUser(u){appUser=u;if(u)storageSet('KKLG_USER',JSON.stringify({...u,expiresAt:Date.now()+APP_CONFIG.loginRememberMs}));else storageRemove('KKLG_USER')}
 async function waitAuthReady(){return new Promise(resolve=>{const off=auth.onAuthStateChanged(u=>{off();resolve(u)})})}
-async function ensureAuth(){const u=authUser();if(u&&isAllowedEmail(u.email)&&authSessionValid())return u;throw new Error('Chưa đăng nhập Gmail được phép hoặc phiên đã hết hạn.')}
+async function ensureAuth(){const u=authUser();if(u&&isAllowedEmail(u.email)&&authSessionValid(u.email))return u;throw new Error('Chưa đăng nhập Gmail được phép hoặc phiên đã hết hạn.')}
 async function ensureAnonAuth(){return ensureAuth()}
 function isAdmin(){return appUser&&appUser.role==='admin'}
 function currentStaffMode(){if(!appUser||appUser.role!=='staff')return '';return appUser.mode||state.staffPermissions[appUser.name]?.mode||'edit'}
@@ -333,8 +340,8 @@ async function loginGoogle(){
     const res=await auth.signInWithPopup(provider);
     await finishFirebaseLogin(res.user,{forceStaffPick:true});
   }catch(e){
-    if(e&&['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(e.code)){
-      try{const provider=new firebase.auth.GoogleAuthProvider();await auth.signInWithRedirect(provider);return}catch(er){setMsg(`Lỗi đăng nhập Gmail: ${er.code||''} ${er.message}`,true)}
+    if(e&&['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment'].includes(e.code)){
+      try{const provider=new firebase.auth.GoogleAuthProvider();markAuthRedirectPending();await auth.signInWithRedirect(provider);return}catch(er){storageRemove(AUTH_REDIRECT_PENDING_KEY);setMsg(`Lỗi đăng nhập Gmail: ${er.code||''} ${er.message}`,true)}
     }else setMsg(`Lỗi đăng nhập Gmail: ${e.code||''} ${e.message}`,true);
     showGoogleLogin();
   }
@@ -1562,7 +1569,55 @@ function installReturnActionFallback(){
 let globalEscCloseInstalled=false;
 function closeTopPopupByEsc(){try{const notice=$('scanBigNotice');if(notice&&!notice.classList.contains('hidden')){hideScanNotices();return true}}catch(e){}const visible=[...document.querySelectorAll('.loginModal:not(.hidden),.modal:not(.hidden),.multiPicker:not(.hidden)')];if(!visible.length)return false;const el=visible[visible.length-1];if(el.id==='retInputModal')retStopCamera();if(el.id==='scanInputModal')stopScanCamera();el.classList.add('hidden');return true}
 function installGlobalEscClose(){if(globalEscCloseInstalled)return;globalEscCloseInstalled=true;document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(closeTopPopupByEsc()){e.preventDefault();e.stopImmediatePropagation()}},true)}
-async function boot(){initFirebase();bindEvents();bindScanEvents();bindReturnEvents();installReturnActionFallback();installGlobalEscClose();try{if(localStorage.getItem('KKLG_COMPACT')==='1')toggleCompactMode()}catch(e){}try{if(localStorage.getItem('KKLG_STOCK_HIDDEN')==='1')setStockPanelHidden(true)}catch(e){}try{await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);try{await auth.getRedirectResult()}catch(e){setMsg(`Lỗi đăng nhập redirect: ${e.code||''} ${e.message}`,true)}const fu=await waitAuthReady();applyPermissionUI();updateDigitButtons();switchTab(APP_CONFIG.defaultTab);if(fu&&isAllowedEmail(fu.email)&&authSessionValid()){await finishFirebaseLogin(fu,{forceStaffPick:false})}else{if(fu&&!isAllowedEmail(fu.email)){await auth.signOut();setMsg(`Email ${fu.email||''} chưa được cấp quyền.`,true)}else if(fu&&!authSessionValid()){await auth.signOut();setMsg('Phiên đăng nhập đã hết hạn 1 tháng, vui lòng đăng nhập Gmail lại.',true)}renderStaffButtons();applyPermissionUI();showGoogleLogin()}}catch(e){setMsg(`Lỗi khởi động đăng nhập: ${e.code||''} ${e.message}`,true);renderStaffButtons();applyPermissionUI();showGoogleLogin()}}boot();
+async function boot(){
+  initFirebase();
+  bindEvents();
+  bindScanEvents();
+  bindReturnEvents();
+  installReturnActionFallback();
+  installGlobalEscClose();
+  try{if(storageGet('KKLG_COMPACT')==='1')toggleCompactMode()}catch(e){}
+  try{if(storageGet('KKLG_STOCK_HIDDEN')==='1')setStockPanelHidden(true)}catch(e){}
+  try{
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    let redirectUser=null,redirectPending=false;
+    try{
+      redirectPending=consumeAuthRedirectPending();
+      const redirectResult=await auth.getRedirectResult();
+      redirectUser=redirectResult&&redirectResult.user?redirectResult.user:null;
+    }catch(e){
+      setMsg(`L\u1ed7i \u0111\u0103ng nh\u1eadp redirect: ${e.code||''} ${e.message}`,true);
+    }
+    const fu=await waitAuthReady();
+    applyPermissionUI();
+    updateDigitButtons();
+    switchTab(APP_CONFIG.defaultTab);
+    if(fu&&isAllowedEmail(fu.email)){
+      const freshLogin=!!redirectUser||redirectPending||isRecentFirebaseSignIn(fu);
+      if(authSessionValid(fu.email)||freshLogin){
+        await finishFirebaseLogin(fu,{forceStaffPick:freshLogin});
+        return;
+      }
+      try{await auth.signOut()}catch(e){}
+      clearAuthSession();
+      persistUser(null);
+      setMsg('Phi\u00ean \u0111\u0103ng nh\u1eadp \u0111\u00e3 h\u1ebft h\u1ea1n 1 th\u00e1ng, vui l\u00f2ng \u0111\u0103ng nh\u1eadp Gmail l\u1ea1i.',true);
+    }else if(fu&&!isAllowedEmail(fu.email)){
+      try{await auth.signOut()}catch(e){}
+      clearAuthSession();
+      persistUser(null);
+      setMsg(`Email ${fu.email||''} ch\u01b0a \u0111\u01b0\u1ee3c c\u1ea5p quy\u1ec1n.`,true);
+    }
+    renderStaffButtons();
+    applyPermissionUI();
+    showGoogleLogin();
+  }catch(e){
+    setMsg(`L\u1ed7i kh\u1edfi \u0111\u1ed9ng \u0111\u0103ng nh\u1eadp: ${e.code||''} ${e.message}`,true);
+    renderStaffButtons();
+    applyPermissionUI();
+    showGoogleLogin();
+  }
+}boot();
 </script>
 </body>
 </html>
