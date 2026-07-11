@@ -13,12 +13,14 @@ const objectUrls=[];
 
 const sequences={
   ok:[
-    {freq:960,start:0,dur:.15,amp:.80},
-    {freq:1360,start:.17,dur:.15,amp:.76}
+    {freq:820,start:0,dur:.10,amp:.78},
+    {freq:1180,start:.11,dur:.11,amp:.82},
+    {freq:1560,start:.23,dur:.14,amp:.86}
   ],
   err:[
-    {freq:340,start:0,dur:.22,amp:.84},
-    {freq:235,start:.25,dur:.28,amp:.88}
+    {freq:430,start:0,dur:.20,amp:1},{freq:860,start:0,dur:.20,amp:.72},
+    {freq:290,start:.23,dur:.23,amp:1},{freq:580,start:.23,dur:.23,amp:.78},
+    {freq:185,start:.49,dur:.31,amp:1},{freq:370,start:.49,dur:.31,amp:.82}
   ],
   hit:[
     {freq:720,start:0,dur:.18,amp:.84},{freq:1440,start:0,dur:.18,amp:1},{freq:2880,start:0,dur:.18,amp:.62},
@@ -62,7 +64,7 @@ function makeWavUrl(kind){
       const env=Math.max(0,Math.min(attack,release));
       value+=Math.sin(2*Math.PI*tone.freq*local)*tone.amp*env;
     }
-    value=kind==='hit'?Math.tanh(value*1.45):Math.max(-1,Math.min(1,value));
+    value=kind==='hit'?Math.tanh(value*1.45):kind==='err'?Math.tanh(value*1.30):Math.max(-1,Math.min(1,value));
     view.setInt16(44+i*2,Math.round(value*32767),true);
   }
   const url=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
@@ -98,11 +100,11 @@ function webAudioBackup(kind){
     if(!ctx)return;
     const seq=sequences[kind]||sequences.ok;
     const base=ctx.currentTime+.012;
-    const backupGain=kind==='hit'?.34:.22;
+    const backupGain=kind==='hit'?.34:kind==='err'?.38:.24;
     for(const tone of seq){
       const o=ctx.createOscillator();
       const g=ctx.createGain();
-      o.type=kind==='err'?'square':kind==='hit'?'sawtooth':'sine';
+      o.type=kind==='err'?'square':kind==='hit'?'sawtooth':'triangle';
       o.frequency.setValueAtTime(tone.freq,base+tone.start);
       g.gain.setValueAtTime(.0001,base+tone.start);
       g.gain.exponentialRampToValueAtTime(backupGain,base+tone.start+.006);
