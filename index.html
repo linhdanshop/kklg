@@ -212,6 +212,7 @@ function initFirebase(){try{firebase.initializeApp(APP_CONFIG.firebaseConfig);db
 const AUTH_SESSION_KEY='KKLG_AUTH_SESSION';
 const STAFF_SESSION_KEY='KKLG_STAFF_SESSION';
 const AUTH_REDIRECT_PENDING_KEY='KKLG_AUTH_REDIRECT_PENDING';
+const AUTH_DIRECT_PENDING_KEY='KKLG_AUTH_DIRECT_PENDING';
 function storageGet(key){try{return localStorage.getItem(key)}catch(e){return null}}
 function storageSet(key,val){try{localStorage.setItem(key,val);return true}catch(e){console.warn('localStorage set failed:',key,e&&e.message?e.message:e);return false}}
 function storageRemove(key){try{localStorage.removeItem(key)}catch(e){}}
@@ -220,6 +221,13 @@ function consumeAuthRedirectPending(){const raw=storageGet(AUTH_REDIRECT_PENDING
 function isRecentFirebaseSignIn(user,windowMs=10*60*1000){try{const raw=user&&user.metadata&&(user.metadata.lastSignInTime||user.metadata.lastLoginAt);const t=raw?Date.parse(raw):0;return !!(t&&Date.now()-t<windowMs)}catch(e){return false}}
 function isIOSBrowser(){const ua=navigator.userAgent||'';return /iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
 function shouldUseGoogleDirectLogin(){return isIOSBrowser()&&location.hostname==='linhdanshop.github.io'}
+function appReturnUrl(){return `${location.origin}${location.pathname.replace(/\/?$/,'/')}`}
+function authHashParams(){const h=String(location.hash||'').replace(/^#/,'');return h?new URLSearchParams(h):null}
+function clearAuthHash(){try{if(location.hash&&(location.hash.includes('id_token=')||location.hash.includes('error=')))history.replaceState(null,document.title,location.pathname+location.search)}catch(e){}}
+function saveDirectAuthState(authUri){try{const state=new URL(authUri).searchParams.get('state')||'';storageSet(AUTH_DIRECT_PENDING_KEY,JSON.stringify({state,startedAt:Date.now()}))}catch(e){}}
+function consumeDirectAuthState(){const raw=storageGet(AUTH_DIRECT_PENDING_KEY);storageRemove(AUTH_DIRECT_PENDING_KEY);if(!raw)return null;try{return JSON.parse(raw)}catch(e){return null}}
+async function startGoogleAuthUriLogin(){const body={providerId:'google.com',continueUri:appReturnUrl(),customParameter:{prompt:'select_account'}};const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=${encodeURIComponent(APP_CONFIG.firebaseConfig.apiKey)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok||!data.authUri)throw new Error(data.error?.message||'Không tạo được link đăng nhập Google.');saveDirectAuthState(data.authUri);location.assign(data.authUri)}
+async function consumeGoogleAuthUriResult(){const p=authHashParams();if(!p||(!p.get('id_token')&&!p.get('error')))return null;const saved=consumeDirectAuthState();clearAuthHash();if(p.get('error'))throw new Error(p.get('error_description')||p.get('error'));if(!saved||!saved.state||saved.state!==p.get('state')||Date.now()-(saved.startedAt||0)>10*60*1000)throw new Error('Phiên đăng nhập Google không hợp lệ, vui lòng đăng nhập lại.');const idToken=p.get('id_token');if(!idToken)throw new Error('Google không trả token đăng nhập.');return auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(idToken))}
 function normEmail(e){return String(e||'').trim().toLowerCase()}
 function authUser(){return auth&&auth.currentUser?auth.currentUser:null}
 function authEmail(){return normEmail(authUser()?.email||'')}
@@ -228,7 +236,7 @@ function isStaffEmail(email){email=normEmail(email);return (APP_CONFIG.staffEmai
 function isAllowedEmail(email){return isAdminEmail(email)||isStaffEmail(email)}
 function authSessionValid(email=''){try{const raw=JSON.parse(storageGet(AUTH_SESSION_KEY)||'null');if(!raw||!raw.expiresAt)return false;if(email&&raw.email&&normEmail(raw.email)!==normEmail(email))return false;if(Date.now()>raw.expiresAt){storageRemove(AUTH_SESSION_KEY);return false}return true}catch(e){return false}}
 function saveAuthSession(email){storageSet(AUTH_SESSION_KEY,JSON.stringify({email:normEmail(email),expiresAt:Date.now()+APP_CONFIG.loginRememberMs,loginAt:new Date().toISOString()}))}
-function clearAuthSession(){storageRemove(AUTH_SESSION_KEY);storageRemove(STAFF_SESSION_KEY);storageRemove('KKLG_USER');storageRemove(AUTH_REDIRECT_PENDING_KEY)}
+function clearAuthSession(){storageRemove(AUTH_SESSION_KEY);storageRemove(STAFF_SESSION_KEY);storageRemove('KKLG_USER');storageRemove(AUTH_REDIRECT_PENDING_KEY);storageRemove(AUTH_DIRECT_PENDING_KEY)}
 function savedStaffSession(){try{const raw=JSON.parse(storageGet(STAFF_SESSION_KEY)||'null');if(!raw)return null;if(raw.expiresAt&&Date.now()>raw.expiresAt){storageRemove(STAFF_SESSION_KEY);return null}return raw}catch(e){return null}}
 function saveStaffSession(name){storageSet(STAFF_SESSION_KEY,JSON.stringify({name,expiresAt:Date.now()+APP_CONFIG.staffSelectRememberMs,selectedAt:new Date().toISOString()}))}
 function savedUser(){try{const raw=JSON.parse(storageGet('KKLG_USER')||'null');if(!raw)return null;const exp=raw.expiresAt||0;if(exp&&Date.now()>exp){storageRemove('KKLG_USER');return null}return raw}catch(e){return null}}
@@ -339,7 +347,7 @@ async function loginGoogle(){
   try{
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     const provider=new firebase.auth.GoogleAuthProvider();
-    if(shouldUseGoogleDirectLogin()){markAuthRedirectPending();await auth.signInWithRedirect(provider);return}
+    if(shouldUseGoogleDirectLogin()){await startGoogleAuthUriLogin();return}
     const res=await auth.signInWithPopup(provider);
     await finishFirebaseLogin(res.user,{forceStaffPick:true});
   }catch(e){
@@ -1583,7 +1591,13 @@ async function boot(){
   try{if(storageGet('KKLG_STOCK_HIDDEN')==='1')setStockPanelHidden(true)}catch(e){}
   try{
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-    let redirectUser=null,redirectPending=false;
+    let redirectUser=null,redirectPending=false,directUser=null;
+    try{
+      const directResult=await consumeGoogleAuthUriResult();
+      directUser=directResult&&directResult.user?directResult.user:null;
+    }catch(e){
+      setMsg(`Lỗi đăng nhập Gmail: ${e.message||e}`,true);
+    }
     try{
       redirectPending=consumeAuthRedirectPending();
       const redirectResult=await auth.getRedirectResult();
@@ -1596,7 +1610,7 @@ async function boot(){
     updateDigitButtons();
     switchTab(APP_CONFIG.defaultTab);
     if(fu&&isAllowedEmail(fu.email)){
-      const freshLogin=!!redirectUser||redirectPending||isRecentFirebaseSignIn(fu);
+      const freshLogin=!!directUser||!!redirectUser||redirectPending||isRecentFirebaseSignIn(fu);
       if(authSessionValid(fu.email)||freshLogin){
         await finishFirebaseLogin(fu,{forceStaffPick:freshLogin});
         return;
