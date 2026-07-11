@@ -7,7 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://accounts.google.com/gsi/client"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
   <style>
@@ -242,7 +242,8 @@ function startGoogleDirectLogin(){
           await finishFirebaseLogin(res.user,{forceStaffPick:true});
           resolve(res);
         }catch(e){reject(e)}
-      }
+      },
+      error_callback:err=>reject(new Error(err?.message||err?.type||'Không mở được cửa sổ Google.'))
     });
     client.requestAccessToken({prompt:'select_account'});
   });
@@ -365,7 +366,7 @@ function showGoogleLogin(){updateLoginModalMode('google');$('loginModal').classL
 function showStaffPicker(){renderStaffButtons();updateLoginModalMode('staff');$('loginModal').classList.remove('hidden')}
 async function loginGoogle(){
   try{
-    if(shouldUseGoogleDirectLogin()){
+    if(shouldUseGoogleDirectLogin()&&googleIdentityReady()){
       startGoogleDirectLogin().catch(e=>{setMsg(`Lỗi đăng nhập Gmail: ${e.message||e}`,true);showGoogleLogin()});
       return;
     }
