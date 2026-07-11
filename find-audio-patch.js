@@ -13,14 +13,12 @@ const objectUrls=[];
 
 const sequences={
   ok:[
-    {freq:520,start:0,dur:.18,amp:.74},{freq:1040,start:0,dur:.18,amp:.92},{freq:2080,start:0,dur:.18,amp:.52},
-    {freq:680,start:.20,dur:.19,amp:.76},{freq:1360,start:.20,dur:.19,amp:.96},{freq:2720,start:.20,dur:.19,amp:.56},
-    {freq:1640,start:.41,dur:.13,amp:.88},{freq:3280,start:.41,dur:.13,amp:.48}
+    {freq:960,start:0,dur:.15,amp:.80},
+    {freq:1360,start:.17,dur:.15,amp:.76}
   ],
   err:[
-    {freq:320,start:0,dur:.28,amp:.98},{freq:640,start:0,dur:.28,amp:.58},
-    {freq:220,start:.31,dur:.34,amp:1},{freq:440,start:.31,dur:.34,amp:.68},
-    {freq:180,start:.68,dur:.28,amp:1},{freq:360,start:.68,dur:.28,amp:.62}
+    {freq:340,start:0,dur:.22,amp:.84},
+    {freq:235,start:.25,dur:.28,amp:.88}
   ],
   hit:[
     {freq:720,start:0,dur:.18,amp:.84},{freq:1440,start:0,dur:.18,amp:1},{freq:2880,start:0,dur:.18,amp:.62},
@@ -59,12 +57,12 @@ function makeWavUrl(kind){
     for(const tone of seq){
       const local=t-tone.start;
       if(local<0||local>tone.dur)continue;
-      const attack=Math.min(1,local/.005);
-      const release=Math.min(1,(tone.dur-local)/.03);
+      const attack=Math.min(1,local/(kind==='hit'?.005:.008));
+      const release=Math.min(1,(tone.dur-local)/(kind==='hit'?.03:.025));
       const env=Math.max(0,Math.min(attack,release));
       value+=Math.sin(2*Math.PI*tone.freq*local)*tone.amp*env;
     }
-    value=Math.tanh(value*1.45);
+    value=kind==='hit'?Math.tanh(value*1.45):Math.max(-1,Math.min(1,value));
     view.setInt16(44+i*2,Math.round(value*32767),true);
   }
   const url=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
@@ -100,13 +98,14 @@ function webAudioBackup(kind){
     if(!ctx)return;
     const seq=sequences[kind]||sequences.ok;
     const base=ctx.currentTime+.012;
+    const backupGain=kind==='hit'?.34:.22;
     for(const tone of seq){
       const o=ctx.createOscillator();
       const g=ctx.createGain();
-      o.type=kind==='err'?'square':kind==='hit'?'sawtooth':'square';
+      o.type=kind==='err'?'square':kind==='hit'?'sawtooth':'sine';
       o.frequency.setValueAtTime(tone.freq,base+tone.start);
       g.gain.setValueAtTime(.0001,base+tone.start);
-      g.gain.exponentialRampToValueAtTime(.34,base+tone.start+.006);
+      g.gain.exponentialRampToValueAtTime(backupGain,base+tone.start+.006);
       g.gain.exponentialRampToValueAtTime(.0001,base+tone.start+tone.dur);
       o.connect(g);g.connect(ctx.destination);
       o.start(base+tone.start);
