@@ -2,25 +2,33 @@
 const byId=id=>document.getElementById(id);
 if(!byId('scanPage')||!byId('hangtraPage'))return;
 
-/* QUET MA: direct input above scanned list */
+/* QUET MA: direct input above scanned list, kept in same right column */
 const scanTableBox=byId('scanBody')?.closest('.scanTableBox');
 if(scanTableBox&&!byId('scanDirectBar')){
+  const oldParent=scanTableBox.parentNode;
+  const workArea=document.createElement('div');
+  workArea.id='scanWorkArea';
+  workArea.className='scanWorkArea';
+  oldParent.insertBefore(workArea,scanTableBox);
+
   const bar=document.createElement('div');
   bar.id='scanDirectBar';
   bar.className='scanDirectBar';
   bar.innerHTML='<label for="scanDirectInput">Nhập/Quét mã</label><input id="scanDirectInput" type="text" placeholder="Quét mã rồi Enter ghi ngay" autocomplete="off" autocapitalize="characters" spellcheck="false">';
-  scanTableBox.parentNode.insertBefore(bar,scanTableBox);
+  workArea.appendChild(bar);
+  workArea.appendChild(scanTableBox);
 }
 const oldScanInputBtn=byId('scanInputBtn');
 if(oldScanInputBtn)oldScanInputBtn.remove();
 
 const style=document.createElement('style');
 style.textContent=`
-#scanPage .scanDirectBar{display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid #b9c7d6;border-bottom:0;background:#eef7ff;border-radius:8px 8px 0 0}
+#scanPage .scanWorkArea{min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-self:stretch}
+#scanPage .scanDirectBar{display:flex;gap:8px;align-items:center;flex:0 0 auto;padding:8px 10px;border:1px solid #b9c7d6;border-bottom:0;background:#eef7ff;border-radius:8px 8px 0 0}
 #scanPage .scanDirectBar label{font-size:17px;font-weight:900;color:#064c83;white-space:nowrap}
 #scanPage #scanDirectInput{flex:1;min-width:220px;height:42px;font-size:22px;font-weight:800;color:#c1121f;border:2px solid #3483c9;padding:6px 10px}
-#scanPage .scanTableBox{height:calc(100vh - 335px)}
-@media(max-width:760px){#scanPage .scanDirectBar{padding:6px;gap:6px;flex-wrap:wrap}#scanPage .scanDirectBar label{font-size:15px}#scanPage #scanDirectInput{width:100%;min-width:0;height:42px;font-size:20px}}
+#scanPage .scanWorkArea>.scanTableBox{height:calc(100vh - 335px);min-height:0;flex:1;width:100%}
+@media(max-width:760px){#scanPage .scanDirectBar{padding:6px;gap:6px;flex-wrap:wrap}#scanPage .scanDirectBar label{font-size:15px}#scanPage #scanDirectInput{width:100%;min-width:0;height:42px;font-size:20px}#scanPage .scanWorkArea>.scanTableBox{height:360px;min-height:320px}}
 `;
 document.head.appendChild(style);
 
