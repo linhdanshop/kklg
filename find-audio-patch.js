@@ -18,9 +18,10 @@ const sequences={
     {freq:1560,start:.23,dur:.14,amp:.86}
   ],
   err:[
-    {freq:430,start:0,dur:.20,amp:1},{freq:860,start:0,dur:.20,amp:.72},
-    {freq:290,start:.23,dur:.23,amp:1},{freq:580,start:.23,dur:.23,amp:.78},
-    {freq:185,start:.49,dur:.31,amp:1},{freq:370,start:.49,dur:.31,amp:.82}
+    {freq:560,start:0,dur:.21,amp:1},{freq:1120,start:0,dur:.21,amp:1},{freq:2240,start:0,dur:.21,amp:.64},
+    {freq:470,start:.24,dur:.22,amp:1},{freq:940,start:.24,dur:.22,amp:1},{freq:1880,start:.24,dur:.22,amp:.68},
+    {freq:390,start:.49,dur:.25,amp:1},{freq:780,start:.49,dur:.25,amp:1},{freq:1560,start:.49,dur:.25,amp:.72},
+    {freq:320,start:.77,dur:.34,amp:1},{freq:640,start:.77,dur:.34,amp:1},{freq:1280,start:.77,dur:.34,amp:.78}
   ],
   hit:[
     {freq:720,start:0,dur:.18,amp:.84},{freq:1440,start:0,dur:.18,amp:1},{freq:2880,start:0,dur:.18,amp:.62},
@@ -59,12 +60,12 @@ function makeWavUrl(kind){
     for(const tone of seq){
       const local=t-tone.start;
       if(local<0||local>tone.dur)continue;
-      const attack=Math.min(1,local/(kind==='hit'?.005:.008));
-      const release=Math.min(1,(tone.dur-local)/(kind==='hit'?.03:.025));
+      const attack=Math.min(1,local/(kind==='hit'?.005:kind==='err'?.003:.008));
+      const release=Math.min(1,(tone.dur-local)/(kind==='hit'?.03:kind==='err'?.035:.025));
       const env=Math.max(0,Math.min(attack,release));
       value+=Math.sin(2*Math.PI*tone.freq*local)*tone.amp*env;
     }
-    value=kind==='hit'?Math.tanh(value*1.45):kind==='err'?Math.tanh(value*1.30):Math.max(-1,Math.min(1,value));
+    value=kind==='hit'?Math.tanh(value*1.45):kind==='err'?Math.tanh(value*2.20):Math.max(-1,Math.min(1,value));
     view.setInt16(44+i*2,Math.round(value*32767),true);
   }
   const url=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
@@ -100,14 +101,14 @@ function webAudioBackup(kind){
     if(!ctx)return;
     const seq=sequences[kind]||sequences.ok;
     const base=ctx.currentTime+.012;
-    const backupGain=kind==='hit'?.34:kind==='err'?.38:.24;
+    const backupGain=kind==='hit'?.34:kind==='err'?.56:.24;
     for(const tone of seq){
       const o=ctx.createOscillator();
       const g=ctx.createGain();
-      o.type=kind==='err'?'square':kind==='hit'?'sawtooth':'triangle';
+      o.type=kind==='err'?'sawtooth':kind==='hit'?'sawtooth':'triangle';
       o.frequency.setValueAtTime(tone.freq,base+tone.start);
       g.gain.setValueAtTime(.0001,base+tone.start);
-      g.gain.exponentialRampToValueAtTime(backupGain,base+tone.start+.006);
+      g.gain.exponentialRampToValueAtTime(backupGain,base+tone.start+.004);
       g.gain.exponentialRampToValueAtTime(.0001,base+tone.start+tone.dur);
       o.connect(g);g.connect(ctx.destination);
       o.start(base+tone.start);
