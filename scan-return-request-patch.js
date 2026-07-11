@@ -73,91 +73,38 @@ window.renderScanPermissionUI=function(){
 try{renderScanPermissionUI=window.renderScanPermissionUI}catch(e){}
 try{window.renderScanPermissionUI()}catch(e){}
 
-/* Loud success beep only for QUET MA and HANG TRA */
+/* QUET MA + HANG TRA use exactly the same OK/ERROR sounds as KIEM DO */
 const previousScanBeep=typeof window.playScanBeep==='function'?window.playScanBeep.bind(window):()=>{};
-const AudioCtx=window.AudioContext||window.webkitAudioContext;
-let loudCtx=null;
-let loudPoolReady=false;
-let loudPoolIndex=0;
-const loudPool=[];
-let loudObjectUrl='';
-
-function writeAscii(view,offset,text){for(let i=0;i<text.length;i++)view.setUint8(offset+i,text.charCodeAt(i))}
-function buildLoudScanWav(){
-  const sampleRate=44100;
-  const tones=[
-    {freq:980,start:0,dur:.12,amp:1},
-    {freq:1320,start:.13,dur:.11,amp:.96}
-  ];
-  const duration=.30;
-  const samples=Math.ceil(duration*sampleRate);
-  const buffer=new ArrayBuffer(44+samples*2);
-  const view=new DataView(buffer);
-  writeAscii(view,0,'RIFF');view.setUint32(4,36+samples*2,true);writeAscii(view,8,'WAVE');writeAscii(view,12,'fmt ');
-  view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);view.setUint32(24,sampleRate,true);view.setUint32(28,sampleRate*2,true);view.setUint16(32,2,true);view.setUint16(34,16,true);writeAscii(view,36,'data');view.setUint32(40,samples*2,true);
-  for(let i=0;i<samples;i++){
-    const t=i/sampleRate;
-    let value=0;
-    for(const tone of tones){
-      const local=t-tone.start;
-      if(local<0||local>tone.dur)continue;
-      const attack=Math.min(1,local/.004),release=Math.min(1,(tone.dur-local)/.02),env=Math.max(0,Math.min(attack,release));
-      value+=Math.sin(2*Math.PI*tone.freq*local)*tone.amp*env;
-    }
-    value=Math.tanh(value*2.35);
-    view.setInt16(44+i*2,Math.round(value*32767),true);
-  }
-  return URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
-}
-function buildLoudPool(){
-  if(loudPoolReady)return;
-  loudPoolReady=true;
-  loudObjectUrl=buildLoudScanWav();
-  for(let i=0;i<8;i++){
-    const audio=new Audio(loudObjectUrl);
-    audio.preload='auto';audio.volume=1;audio.load();loudPool.push(audio);
-  }
-}
-async function ensureLoudCtx(){
-  if(!AudioCtx)return null;
-  if(!loudCtx||loudCtx.state==='closed'){
-    try{loudCtx=new AudioCtx({latencyHint:'interactive'})}catch(e){loudCtx=new AudioCtx()}
-  }
-  if(loudCtx.state==='suspended'){try{await loudCtx.resume()}catch(e){}}
-  return loudCtx&&loudCtx.state==='running'?loudCtx:null;
-}
-function loudWebAudioBackup(){
-  Promise.resolve(ensureLoudCtx()).then(ctx=>{
-    if(!ctx)return;
-    const t=ctx.currentTime+.008;
-    const make=(freq,start,dur,gain)=>{
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.type='square';o.frequency.setValueAtTime(freq,t+start);g.gain.setValueAtTime(.0001,t+start);g.gain.exponentialRampToValueAtTime(gain,t+start+.004);g.gain.exponentialRampToValueAtTime(.0001,t+start+dur);o.connect(g);g.connect(ctx.destination);o.start(t+start);o.stop(t+start+dur+.02);
-    };
-    make(980,0,.12,.54);make(1320,.13,.11,.50);
-  }).catch(()=>{});
-}
-function playLoudScanBeep(){
-  buildLoudPool();
-  ensureLoudCtx();
-  const audio=loudPool[loudPoolIndex%loudPool.length];
-  loudPoolIndex=(loudPoolIndex+1)%loudPool.length;
-  try{audio.pause();audio.currentTime=0}catch(e){}
-  try{Promise.resolve(audio.play()).catch(()=>loudWebAudioBackup())}catch(e){loudWebAudioBackup()}
-  setTimeout(loudWebAudioBackup,22);
-}
-function isLoudTab(){
+const previousScanErrorBeep=typeof window.playScanErrorBeep==='function'?window.playScanErrorBeep.bind(window):()=>{};
+function isSharedSoundTab(){
   try{return state&&['quetma','hangtra'].includes(state.activeTab)}catch(e){return false}
 }
+function playSharedOk(){
+  if(typeof window.playKiemDoOkBeep==='function')return window.playKiemDoOkBeep();
+  return previousScanBeep();
+}
+function playSharedError(){
+  if(typeof window.playKiemDoErrorBeep==='function')return window.playKiemDoErrorBeep();
+  return previousScanErrorBeep();
+}
 window.playScanBeep=function(){
-  if(isLoudTab())return playLoudScanBeep();
+  if(isSharedSoundTab())return playSharedOk();
   return previousScanBeep();
 };
-try{playScanBeep=window.playScanBeep}catch(e){}
+window.playScanErrorBeep=function(){
+  if(isSharedSoundTab())return playSharedError();
+  return previousScanErrorBeep();
+};
+try{playScanBeep=window.playScanBeep;playScanErrorBeep=window.playScanErrorBeep}catch(e){}
 
+const sharedInputs=new Set(['scanDirectInput','retQuickInput']);
 ['focusin','pointerdown'].forEach(type=>document.addEventListener(type,e=>{
-  if(e.target&&e.target.id==='scanDirectInput'){buildLoudPool();ensureLoudCtx()}
+  if(sharedInputs.has(e.target&&e.target.id)&&typeof window.primeKiemDoSound==='function')window.primeKiemDoSound();
 },true));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&isLoudTab()){buildLoudPool();ensureLoudCtx()}});
-window.addEventListener('beforeunload',()=>{if(loudObjectUrl)URL.revokeObjectURL(loudObjectUrl)});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&sharedInputs.has(e.target&&e.target.id)&&typeof window.primeKiemDoSound==='function')window.primeKiemDoSound();
+},true);
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&isSharedSoundTab()&&typeof window.primeKiemDoSound==='function')window.primeKiemDoSound();
+});
 })();
