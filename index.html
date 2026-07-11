@@ -204,7 +204,7 @@ B128 XANH"></textarea><div style="margin-top:10px;text-align:right"><button id="
 
 </div>
 <script>
-const APP_CONFIG={firebaseConfig:{apiKey:"AIzaSyAEVVkiIa-0ondzVesYAu31kBTae4Q1D9U",authDomain:"kklg-2165b.firebaseapp.com",databaseURL:"https://kklg-2165b-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"kklg-2165b",storageBucket:"kklg-2165b.firebasestorage.app",messagingSenderId:"394170018971",appId:"1:394170018971:web:8bd55930397bf93b442a3e"},root:"kiemke_lamgia",scanRoot:"quet_ma",defaultTab:"lamgia",pageSize:300,adminEmails:["kythuatlado@gmail.com","tranvanan180393@gmail.com"],staffEmails:["shoplinhdan2026@gmail.com"],loginRememberMs:30*24*60*60*1000,staffSelectRememberMs:4*60*60*1000,defaultStaff:{"An":{mode:"edit",order:1},"Nguyệt":{mode:"edit",order:2},"Thủy":{mode:"edit",order:3},"Huyền":{mode:"edit",order:4}},defaultCapacity:{B:{qty:80,maxCodes:4,order:1,visible:true},C:{qty:160,maxCodes:4,order:2,visible:true},E:{qty:160,maxCodes:4,order:3,visible:true},F:{qty:80,maxCodes:4,order:4,visible:true},H:{qty:80,maxCodes:4,order:5,visible:true},K:{qty:80,maxCodes:4,order:6,visible:true},J:{qty:160,maxCodes:4,order:7,visible:true},Z:{qty:40,maxCodes:4,order:8,visible:true}}};
+const APP_CONFIG={firebaseConfig:{apiKey:"AIzaSyAEVVkiIa-0ondzVesYAu31kBTae4Q1D9U",authDomain:"kklg-2165b.firebaseapp.com",databaseURL:"https://kklg-2165b-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"kklg-2165b",storageBucket:"kklg-2165b.firebasestorage.app",messagingSenderId:"394170018971",appId:"1:394170018971:web:8bd55930397bf93b442a3e"},googleClientId:"394170018971-p7a7gmr3e63qckgv1kvce2k6le1vmvb1.apps.googleusercontent.com",appUrl:"https://linhdanshop.github.io/kklg/",root:"kiemke_lamgia",scanRoot:"quet_ma",defaultTab:"lamgia",pageSize:300,adminEmails:["kythuatlado@gmail.com","tranvanan180393@gmail.com"],staffEmails:["shoplinhdan2026@gmail.com"],loginRememberMs:30*24*60*60*1000,staffSelectRememberMs:4*60*60*1000,defaultStaff:{"An":{mode:"edit",order:1},"Nguyệt":{mode:"edit",order:2},"Thủy":{mode:"edit",order:3},"Huyền":{mode:"edit",order:4}},defaultCapacity:{B:{qty:80,maxCodes:4,order:1,visible:true},C:{qty:160,maxCodes:4,order:2,visible:true},E:{qty:160,maxCodes:4,order:3,visible:true},F:{qty:80,maxCodes:4,order:4,visible:true},H:{qty:80,maxCodes:4,order:5,visible:true},K:{qty:80,maxCodes:4,order:6,visible:true},J:{qty:160,maxCodes:4,order:7,visible:true},Z:{qty:40,maxCodes:4,order:8,visible:true}}};
 let db=null,auth=null,firebaseReady=false,appUser=null,activeMultiPicker=null,kkChecksRef=null,kkRemoteQueued=null,kkRemoteRenderTimer=null,kkImportSide="",zoomGuardInstalled=false,lastTouchEnd=0,scanCodeReader=null,scanCameraControls=null,scanCameraActive=false,scanCameraProcessing=false,scanLastCameraCode="",scanLastCameraAt=0,scanAudioCtx=null,scanNativeTimer=null,scanNativeStream=null,scanNoticeLocked=false,scanNoticeUnlockTimer=null,scanRecentAttempts=[],scanBlockedBeepAt=0,scanScansRef=null,scanMetaRef=null,scanRealtimeRenderTimer=null;const state={staffPermissions:clone(APP_CONFIG.defaultStaff),activeTab:APP_CONFIG.defaultTab,dateISO:todayISO(),sessions:{kiemke:[],lamgia:[],quetma:[],hangtra:[]},sessionId:{kiemke:null,lamgia:null,quetma:null,hangtra:null},meta:{kiemke:null,lamgia:null,quetma:null,hangtra:null},kiemke:{rawItems:[],workingItems:[],invalidRows:[],checks:{},filtered:[],page:1,pageSize:APP_CONFIG.pageSize,digitFilters:[]},lamgia:{rawItems:[],baseItems:[],slots:[],slotStatus:{},filter:'ALL',ignoreQty1:false,hideDone:false,compact:false,settings:clone(APP_CONFIG.defaultCapacity),filteredSlots:[]},scan:{masterCodes:[],scans:[],masterSearch:'',masterPage:1,masterPageSize:300}};const saveTimers={};const pendingSaves={};let kkHistoryRows=[],kkHistoryPage=0,kkSearchTimer=null,kkStatsTimer=null;const $=id=>document.getElementById(id);
 function clone(x){return JSON.parse(JSON.stringify(x))}function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}function nowStamp(){return Date.now()}function dateTitle(iso){const [y,m,d]=String(iso).split('-');return `Ngày ${d}/${m}/${y}`}function vnNum(n){if(n===''||n==null||Number.isNaN(n))return'';return Number(n).toLocaleString('vi-VN')}function toNum(v){if(v===''||v==null)return 0;if(typeof v==='number')return Number.isFinite(v)?Math.trunc(v):0;const n=Number(String(v).replace(/,/g,'.').replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?Math.trunc(n):0}function norm(s){return String(s??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/\s+/g,' ')}function cleanCode(s){return String(s??'').trim().replace(/\s+/g,' ').toUpperCase()}function escapeHtml(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}function escapeAttr(s){return escapeHtml(s).replace(/'/g,'&#39;')}function codeKey(code){return cleanCode(code).replace(/[.#$\[\]\/]/g,'_')}function selectedValues(sel){return [...sel.options].filter(o=>o.selected).map(o=>o.value)}function setMsg(t,err=false){$('statusMsg').textContent=t;$('statusMsg').classList.toggle('error',!!err)}function pushKey(path){return db.ref(path).push().key}function sessionLabel(s){return `${s.date||''} | ${s.fileName||''} | ${s.createdBy||''} | ${vnNum(s.count||s.workingCount||0)} dòng`}
 function initFirebase(){try{firebase.initializeApp(APP_CONFIG.firebaseConfig);db=firebase.database();auth=firebase.auth();firebaseReady=true}catch(e){setMsg(`Lỗi Firebase init: ${e.message}`,true)}}async function fbGet(path){const s=await db.ref(path).get();return s.exists()?s.val():null}async function fbSet(path,v){return db.ref(path).set(v)}async function fbUpdate(path,v){return db.ref(path).update(v)}async function fbMultiUpdate(updates){return db.ref().update(updates)}async function saveObjectChunked(base,obj,size=500){const entries=Object.entries(obj);for(let i=0;i<entries.length;i+=size){const u={};entries.slice(i,i+size).forEach(([k,v])=>u[k]=v);await fbUpdate(base,u)}}
@@ -212,12 +212,21 @@ function initFirebase(){try{firebase.initializeApp(APP_CONFIG.firebaseConfig);db
 const AUTH_SESSION_KEY='KKLG_AUTH_SESSION';
 const STAFF_SESSION_KEY='KKLG_STAFF_SESSION';
 const AUTH_REDIRECT_PENDING_KEY='KKLG_AUTH_REDIRECT_PENDING';
+const AUTH_GOOGLE_DIRECT_KEY='KKLG_GOOGLE_DIRECT_PENDING';
 function storageGet(key){try{return localStorage.getItem(key)}catch(e){return null}}
 function storageSet(key,val){try{localStorage.setItem(key,val);return true}catch(e){console.warn('localStorage set failed:',key,e&&e.message?e.message:e);return false}}
 function storageRemove(key){try{localStorage.removeItem(key)}catch(e){}}
 function markAuthRedirectPending(){storageSet(AUTH_REDIRECT_PENDING_KEY,JSON.stringify({startedAt:Date.now()}))}
 function consumeAuthRedirectPending(){const raw=storageGet(AUTH_REDIRECT_PENDING_KEY);storageRemove(AUTH_REDIRECT_PENDING_KEY);if(!raw)return false;try{const data=JSON.parse(raw);return !!(data&&data.startedAt&&Date.now()-data.startedAt<10*60*1000)}catch(e){return true}}
 function isRecentFirebaseSignIn(user,windowMs=10*60*1000){try{const raw=user&&user.metadata&&(user.metadata.lastSignInTime||user.metadata.lastLoginAt);const t=raw?Date.parse(raw):0;return !!(t&&Date.now()-t<windowMs)}catch(e){return false}}
+function randomAuthText(){try{const arr=new Uint8Array(16);crypto.getRandomValues(arr);return [...arr].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return Math.random().toString(36).slice(2)+Date.now().toString(36)}}
+function isIOSBrowser(){const ua=navigator.userAgent||'';return /iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+function shouldUseGoogleDirectLogin(){return isIOSBrowser()&&location.hostname==='linhdanshop.github.io'}
+function cleanAuthHash(){try{if(location.hash&&(location.hash.includes('id_token=')||location.hash.includes('error=')))history.replaceState(null,document.title,location.pathname+location.search)}catch(e){}}
+function markGoogleDirectPending(state,nonce){storageSet(AUTH_GOOGLE_DIRECT_KEY,JSON.stringify({state,nonce,startedAt:Date.now()}))}
+function consumeGoogleDirectPending(){const raw=storageGet(AUTH_GOOGLE_DIRECT_KEY);storageRemove(AUTH_GOOGLE_DIRECT_KEY);if(!raw)return null;try{return JSON.parse(raw)}catch(e){return null}}
+async function startGoogleDirectLogin(){const state=randomAuthText(),nonce=randomAuthText();markGoogleDirectPending(state,nonce);const p=new URLSearchParams({client_id:APP_CONFIG.googleClientId,redirect_uri:APP_CONFIG.appUrl,response_type:'id_token',scope:'openid email profile',state,nonce,prompt:'select_account'});location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${p.toString()}`)}
+async function consumeGoogleDirectResult(){const hash=String(location.hash||'').replace(/^#/,'');if(!hash||(!hash.includes('id_token=')&&!hash.includes('error=')))return null;const params=new URLSearchParams(hash),saved=consumeGoogleDirectPending();cleanAuthHash();if(params.get('error'))throw new Error(params.get('error_description')||params.get('error'));if(!saved||!saved.state||saved.state!==params.get('state')||Date.now()-(saved.startedAt||0)>10*60*1000)throw new Error('Phiên đăng nhập Google không hợp lệ, vui lòng bấm đăng nhập lại.');const idToken=params.get('id_token');if(!idToken)throw new Error('Google không trả token đăng nhập.');const credential=firebase.auth.GoogleAuthProvider.credential(idToken);return auth.signInWithCredential(credential)}
 function normEmail(e){return String(e||'').trim().toLowerCase()}
 function authUser(){return auth&&auth.currentUser?auth.currentUser:null}
 function authEmail(){return normEmail(authUser()?.email||'')}
@@ -226,7 +235,7 @@ function isStaffEmail(email){email=normEmail(email);return (APP_CONFIG.staffEmai
 function isAllowedEmail(email){return isAdminEmail(email)||isStaffEmail(email)}
 function authSessionValid(email=''){try{const raw=JSON.parse(storageGet(AUTH_SESSION_KEY)||'null');if(!raw||!raw.expiresAt)return false;if(email&&raw.email&&normEmail(raw.email)!==normEmail(email))return false;if(Date.now()>raw.expiresAt){storageRemove(AUTH_SESSION_KEY);return false}return true}catch(e){return false}}
 function saveAuthSession(email){storageSet(AUTH_SESSION_KEY,JSON.stringify({email:normEmail(email),expiresAt:Date.now()+APP_CONFIG.loginRememberMs,loginAt:new Date().toISOString()}))}
-function clearAuthSession(){storageRemove(AUTH_SESSION_KEY);storageRemove(STAFF_SESSION_KEY);storageRemove('KKLG_USER');storageRemove(AUTH_REDIRECT_PENDING_KEY)}
+function clearAuthSession(){storageRemove(AUTH_SESSION_KEY);storageRemove(STAFF_SESSION_KEY);storageRemove('KKLG_USER');storageRemove(AUTH_REDIRECT_PENDING_KEY);storageRemove(AUTH_GOOGLE_DIRECT_KEY)}
 function savedStaffSession(){try{const raw=JSON.parse(storageGet(STAFF_SESSION_KEY)||'null');if(!raw)return null;if(raw.expiresAt&&Date.now()>raw.expiresAt){storageRemove(STAFF_SESSION_KEY);return null}return raw}catch(e){return null}}
 function saveStaffSession(name){storageSet(STAFF_SESSION_KEY,JSON.stringify({name,expiresAt:Date.now()+APP_CONFIG.staffSelectRememberMs,selectedAt:new Date().toISOString()}))}
 function savedUser(){try{const raw=JSON.parse(storageGet('KKLG_USER')||'null');if(!raw)return null;const exp=raw.expiresAt||0;if(exp&&Date.now()>exp){storageRemove('KKLG_USER');return null}return raw}catch(e){return null}}
@@ -336,6 +345,7 @@ function showStaffPicker(){renderStaffButtons();updateLoginModalMode('staff');$(
 async function loginGoogle(){
   try{
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    if(shouldUseGoogleDirectLogin()){await startGoogleDirectLogin();return}
     const provider=new firebase.auth.GoogleAuthProvider();
     const res=await auth.signInWithPopup(provider);
     await finishFirebaseLogin(res.user,{forceStaffPick:true});
@@ -1580,7 +1590,13 @@ async function boot(){
   try{if(storageGet('KKLG_STOCK_HIDDEN')==='1')setStockPanelHidden(true)}catch(e){}
   try{
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-    let redirectUser=null,redirectPending=false;
+    let redirectUser=null,redirectPending=false,directUser=null;
+    try{
+      const directResult=await consumeGoogleDirectResult();
+      directUser=directResult&&directResult.user?directResult.user:null;
+    }catch(e){
+      setMsg(`Lỗi đăng nhập Gmail: ${e.message||e}`,true);
+    }
     try{
       redirectPending=consumeAuthRedirectPending();
       const redirectResult=await auth.getRedirectResult();
@@ -1593,7 +1609,7 @@ async function boot(){
     updateDigitButtons();
     switchTab(APP_CONFIG.defaultTab);
     if(fu&&isAllowedEmail(fu.email)){
-      const freshLogin=!!redirectUser||redirectPending||isRecentFirebaseSignIn(fu);
+      const freshLogin=!!directUser||!!redirectUser||redirectPending||isRecentFirebaseSignIn(fu);
       if(authSessionValid(fu.email)||freshLogin){
         await finishFirebaseLogin(fu,{forceStaffPick:freshLogin});
         return;
