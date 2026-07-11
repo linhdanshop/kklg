@@ -137,16 +137,21 @@ function primeFindSound(){
 function inFindScanWindow(){return Date.now()<=findSoundWindowUntil}
 function markFindScan(){findSoundWindowUntil=Date.now()+900;primeFindSound()}
 
+window.playKiemDoOkBeep=()=>playPool('ok');
+window.playKiemDoErrorBeep=()=>playPool('err');
+window.playKiemDoHitBeep=()=>playPool('hit');
+window.primeKiemDoSound=primeFindSound;
+
 window.playScanBeep=function(){
-  if(inFindScanWindow())return playPool('ok');
+  if(inFindScanWindow())return window.playKiemDoOkBeep();
   return originalOk();
 };
 window.playScanErrorBeep=function(){
-  if(inFindScanWindow())return playPool('err');
+  if(inFindScanWindow())return window.playKiemDoErrorBeep();
   return originalErr();
 };
 window.playFindHitBeep=function(){
-  if(inFindScanWindow())return playPool('hit');
+  if(inFindScanWindow())return window.playKiemDoHitBeep();
   return originalHit();
 };
 try{playScanBeep=window.playScanBeep;playScanErrorBeep=window.playScanErrorBeep;playFindHitBeep=window.playFindHitBeep}catch(e){}
