@@ -10,8 +10,40 @@ let findNoticePriority=0;
 
 const areaNorm=v=>cleanCode(v);
 const areaPath=()=>`${findBasePath()}/areas`;
+
+// Fixed locations path (persistent across dates)
+function findFixedPath(){return `${findBasePath()}/fixedLocations`}
+
+// Load fixed locations and merge into state.find.locations (preserve fixed priority)
+async function loadFixedAndMerge(){
+  try{
+    const fixedRaw=await fbGet(findFixedPath()).catch(()=>null)||{};
+    const fixedArr=Object.entries(fixedRaw||{}).map(([id,v])=>({...v,id,type:'fixed'}));
+    const fixedMap=new Set(fixedArr.map(r=>findClean(r.code)));
+    state.find.fixedLocations=fixedArr;
+    // If state.find.locations already contains daily from loadFindDay, merge preserving fixed-first, and avoid duplicates
+    const dailyArr=(state.find.locations||[]).filter(r=>r.type!=='fixed');
+    const dailyFiltered=dailyArr.filter(r=>!fixedMap.has(findClean(r.code))).map(r=>({...r,type:r.type||'daily'}));
+    state.find.locations=[...fixedArr,...dailyFiltered];
+    renderFindLocations();
+    renderFindStats();
+  }catch(e){console.warn('loadFixedAndMerge error',e)}
+}
+
+// If original loadFindDay exists, wrap it to also load fixed after
+if(typeof loadFindDay==='function'){
+  const OLD_loadFindDay=loadFindDay;
+  loadFindDay=async function(){
+    await OLD_loadFindDay.apply(this,arguments);
+    await loadFixedAndMerge();
+  }
+} else {
+  // attempt initial load
+  setTimeout(()=>loadFixedAndMerge(),300);
+}
+
 function areaStyleFast(area){
-  const palette=[['#e8f1ff','#134e8e'],['#fff0e5','#9a4b00'],['#edf9e8','#286317'],['#f4eaff','#6b2ca0'],['#ffeaf1','#9b244d'],['#e7f8f7','#0f6d68'],['#fff8d9','#7a5b00'],['#eef0ff','#4046a3'],['#f6ece7','#7c3f23'],['#eaf7ff','#05627d']];
+  const palette=[['#e8f1ff','#134e8e'],['#fff0e5','#9a4b00'],['#edf9e8','#286317'],['#f4eaff','#6b2ca0'],['#ffeaf1','#9b244d'],['#e7f8f7','#0f6d68'],['#fff8d9','#7a5b00'],['#eef0ff','#4046a3'],['#f6ecdf','#6b2a00'],['#fff8f0','#7a2c4a']];
   const t=areaNorm(area)||'-';let h=0;
   for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;
   const p=palette[h%palette.length];
@@ -89,6 +121,63 @@ async function deleteAreaFast(){
   setMsg(`Đã xóa khu ${name} khỏi danh sách khu mặc định.`);
 }
 
+// Bulk add locations (supports type 'daily' or 'fixed')
+window.addManyFindLocations=async function(rows, area, source='Up file', type='daily'){
+  if(!canEdit())return alert('Tài khoản chỉ xem không được thao tác.');
+  rows = rows||[];
+  let total=rows.length, added=0, existed=0;
+  const fixedRaw=await fbGet(findFixedPath()).catch(()=>null)||{};
+  const fixedSet=new Set(Object.values(fixedRaw||{}).map(v=>findClean(typeof v==='string'?v:v.code)));
+  // load today's daily map
+  const todayLocRaw=await fbGet(`${findDayPath()}/locations`).catch(()=>null)||{};
+  const dailySet=new Set(Object.values(todayLocRaw||{}).map(v=>findClean(v.code)));
+  for(const r of rows){
+    const code=findClean(r.code||r);
+    const a=areaNorm(r.area||area);
+    if(!code)continue;
+    if(type==='fixed'){
+      if(fixedSet.has(code)){existed++;continue}
+      const id=codeKey(code);
+      const entry={code,area:a,source,createdAt:nowStamp(),createdBy:appUser?.name||''};
+      try{await fbSet(`${findFixedPath()}/${id}`,entry);added++;fixedSet.add(code);}catch(e){console.warn('fixed write fail',e)}
+    } else {
+      // daily
+      if(fixedSet.has(code)||dailySet.has(code)){existed++;continue}
+      const key=pushKey(`${findDayPath()}/locations`);
+      const entry={code,area:a,source,createdAt:nowStamp(),createdBy:appUser?.name||'',updatedAt:nowStamp(),updatedBy:appUser?.name||''};
+      try{await fbSet(`${findDayPath()}/locations/${key}`,entry);added++;dailySet.add(code);}catch(e){console.warn('daily write fail',e)}
+    }
+  }
+  setMsg(`Upload: Đã đọc ${vnNum(total)} mã; Thêm ${vnNum(added)}; Đã tồn tại ${vnNum(existed)}`);
+  await loadFixedAndMerge();
+  return {total,added,existed};
+}
+
+// Export displayed locations (fixed + today's daily)
+window.exportFindLocationsDisplayed=function(){
+  const rows=state.find.locations||[];
+  const aoa=[['STT','Mã','Khu','Loại','Thời gian']];
+  rows.forEach((r,i)=>{
+    const time=(r.createdAt||r.updatedAt||'');
+    aoa.push([i+1,r.code,r.area,r.type==='fixed'?'Cố định':'Hằng ngày',time]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(aoa),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Locations');XLSX.writeFile(wb,`kiem_do_locations_${state.dateISO}.xlsx`);
+}
+
+// Delete daily & needs for a given month (format YYYY-MM)
+window.deleteFindDailyByMonth=async function(month){
+  if(!isAdmin())return alert('Chỉ Admin mới được thực hiện.');
+  if(!month||!/^[0-9]{4}-[0-9]{2}$/.test(month))return alert('Tháng không hợp lệ (YYYY-MM).');
+  if(!confirm(`Xóa dữ liệu Daily và Cần Tìm cho tháng ${month}? Hành động không thể hoàn tác.`))return;
+  const [y,m]=month.split('-').map(Number);
+  const days=new Date(y,m,0).getDate();
+  for(let d=1;d<=days;d++){
+    const iso=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    try{await fbSet(`${findBasePath()}/days/${iso}/locations`,null);await fbSet(`${findBasePath()}/days/${iso}/needs`,null);}catch(e){console.warn('deleteFindDailyByMonth failed for',iso,e)}
+  }
+  setMsg(`Đã xóa dữ liệu Daily và Cần Tìm cho tháng ${month}.`);
+}
+
 window.renderFindNeeds=function(){
   const body=byId('findNeedBody');
   if(!body)return;
@@ -97,7 +186,7 @@ window.renderFindNeeds=function(){
     const area=findAreaText(r.code);
     const cls=area?'findHitRow':'findMissingRow';
     const timeHtml=r.createdAt?escapeHtml(new Date(r.createdAt).toLocaleString('vi-VN')):'';
-    return `<tr class="${cls}" data-find-need="${escapeAttr(r.id)}"><td>${i+1}</td><td class="findCodeCell">${escapeHtml(r.code||'')}</td><td class="findAreaCell">${area?`<span class="findAreaBadge" style="${areaStyleFast(area)}">${escapeHtml(area)}</span>`:'Chưa có'}</td><td class="findTimeCell">${timeHtml}</td><td>${canEdit()?`<button class="danger" data-find-delete-need="${escapeAttr(r.id)}">Xóa</button>`:''}</td></tr>`;
+    return `<tr class="${cls}" data-find-need="${escapeAttr(r.id)}"><td>${i+1}</td><td class="findCodeCell">${escapeHtml(r.code||'')}</td><td class="findAreaCell">${area?`<span class="findAreaBadge" style="${areaStyleFast(area)}">${escapeHtml(area)}</span>`:escapeHtml(r.foundArea||'')}</td><td class="findTimeCell">${timeHtml}</td></tr>`
   }).join('')||'<tr><td colspan="5" class="findEmpty">Chưa có mã cần tìm.</td></tr>';
 };
 
@@ -228,11 +317,15 @@ function patchFastUI(){
   const needTools=panels[2].querySelector('.findPanelTools');
   locTools.innerHTML=`
     <div class="findFastLine findFastAreaLine"><label>Khu</label><select id="findAreaSelect" class="findAreaSelect"></select><button id="findAreaAddBtn" class="primary">+ Khu</button><button id="findAreaDeleteBtn" class="danger">Xóa khu</button></div>
-    <div class="findFastLine"><label class="findFastLabel scan">Quét mã</label><input id="findLocScanInput" class="findDirectInput findScanOnly" placeholder="Quét mã - Enter ghi ngay" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>
-    <div class="findFastLine"><label class="findFastLabel manual">Nhập tay</label><input id="findLocManualInput" list="findCodeSuggest" class="findDirectInput" placeholder="Nhập mã sản phẩm"><button id="findLocManualAddBtn" class="primary">Ghi</button><input id="findLocFileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden"><button id="findLocImportBtn">Up file</button><button id="findLocClearBtn" class="danger">Xóa cột 2</button><input id="findLocSearch" class="findSearch" placeholder="Tìm trong cột theo mã SP"><span id="findLocCount" class="muted">0 dòng</span></div>`;
+    <div class="findFastLine"><label>Loại</label><select id="findLocTypeSelect" class="findAreaSelect"><option value="daily">Hằng ngày</option><option value="fixed">Cố định</option></select><button id="findLocExportBtn" class="btn">Xuất Excel</button></div>
+    <div class="findFastLine"><label class="findFastLabel scan">Quét mã</label><input id="findLocScanInput" class="findDirectInput findScanOnly" placeholder="Quét mã - Enter ghi ngay" autocomplete="off" autocapitalize="characters"></div>
+    <div class="findFastLine"><label class="findFastLabel manual">Nhập tay</label><input id="findLocManualInput" list="findCodeSuggest" class="findDirectInput" placeholder="Nhập mã sản phẩm"></div>
+    <div class="findFastLine"><button id="findLocManualAddBtn" class="primary">Thêm</button><button id="findLocImportBtn" class="btn">Up file</button><input id="findLocFileInput" type="file" accept=".xlsx,.xls" style="display:none"></div>
+  `;
   needTools.innerHTML=`
-    <div class="findFastLine"><label class="findFastLabel scan">Quét mã</label><input id="findNeedScanInput" class="findDirectInput findScanOnly" placeholder="Quét mã - Enter ghi ngay" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>
-    <div class="findFastLine"><label class="findFastLabel manual">Nhập tay</label><input id="findNeedManualInput" list="findCodeSuggest" class="findDirectInput" placeholder="Nhập mã cần tìm"><button id="findNeedManualAddBtn" class="primary">Ghi</button><input id="findNeedFileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden"><button id="findNeedImportBtn">Up file</button><button id="findNeedClearBtn" class="danger">Xóa cột 3</button><span id="findNeedCount" class="muted">0 mã</span></div>`;
+    <div class="findFastLine"><label class="findFastLabel scan">Quét mã</label><input id="findNeedScanInput" class="findDirectInput findScanOnly" placeholder="Quét mã - Enter ghi ngay" autocomplete="off" autocapitalize="characters"></div>
+    <div class="findFastLine"><label class="findFastLabel manual">Nhập tay</label><input id="findNeedManualInput" list="findCodeSuggest" class="findDirectInput" placeholder="Nhập mã cần tìm"></div>
+  `;
   const heads=panels[2].querySelectorAll('thead th');
   if(heads[3])heads[3].textContent='Thời gian';
   const style=document.createElement('style');
@@ -260,6 +353,7 @@ function patchFastUI(){
   renderAreasFast();
   byId('findAreaAddBtn').addEventListener('click',addAreaFast);
   byId('findAreaDeleteBtn').addEventListener('click',deleteAreaFast);
+  byId('findLocExportBtn').addEventListener('click',()=>exportFindLocationsDisplayed());
   onEnter(byId('findLocScanInput'),()=>submitLocation('findLocScanInput','Quét mã'));
   onEnter(byId('findLocManualInput'),()=>submitLocation('findLocManualInput','Nhập tay'));
   onEnter(byId('findNeedScanInput'),()=>submitNeed('findNeedScanInput','Quét mã'));
@@ -273,8 +367,9 @@ function patchFastUI(){
     try{
       if(file){
         const area=areaNorm(byId('findAreaSelect')?.value);
+        const type=byId('findLocTypeSelect')?.value||'daily';
         const rows=await readFindLocationRowsFromExcel(file,area);
-        await addManyFindLocations(rows,area,'Up file');
+        await addManyFindLocations(rows,area,'Up file',type);
       }
     }finally{e.target.value=''}
   });
