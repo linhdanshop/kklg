@@ -229,7 +229,7 @@ B128 XANH"></textarea><div style="margin-top:10px;text-align:right"><button id="
 </div>
 <script>
 const APP_CONFIG={firebaseConfig:{apiKey:"AIzaSyAEVVkiIa-0ondzVesYAu31kBTae4Q1D9U",authDomain:"kklg-2165b.firebaseapp.com",databaseURL:"https://kklg-2165b-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"kklg-2165b",storageBucket:"kklg-2165b.firebasestorage.app",messagingSenderId:"394170018971",appId:"1:394170018971:web:8bd55930397bf93b442a3e"},root:"kiemke_lamgia",scanRoot:"quet_ma",findRoot:"kiem_do",defaultTab:"lamgia",pageSize:300,adminEmails:["kythuatlado@gmail.com","tranvanan180393@gmail.com"],staffEmails:["shoplinhdan2026@gmail.com"],loginRememberMs:30*24*60*60*1000,staffSelectRememberMs:4*60*60*1000,defaultStaff:{"An":{mode:"edit",order:1},"Nguyệt":{mode:"edit",order:2},"Thủy":{mode:"edit",order:3},"Huyền":{mode:"edit",order:4}},defaultCapacity:{B:{qty:80,maxCodes:4,order:1,visible:true},C:{qty:160,maxCodes:4,order:2,visible:true},E:{qty:160,maxCodes:4,order:3,visible:true},F:{qty:80,maxCodes:4,order:4,visible:true},H:{qty:80,maxCodes:4,order:5,visible:true},K:{qty:80,maxCodes:4,order:6,visible:true},J:{qty:160,maxCodes:4,order:7,visible:true},Z:{qty:40,maxCodes:4,order:8,visible:true}}};
-let db=null,auth=null,firebaseReady=false,appUser=null,activeMultiPicker=null,kkChecksRef=null,kkRemoteQueued=null,kkRemoteRenderTimer=null,kkImportSide="",zoomGuardInstalled=false,lastTouchEnd=0,scanCodeReader=null,scanCameraControls=null,scanCameraActive=false,scanCameraProcessing=false,scanLastCameraCode="",scanLastCameraAt=0,scanAudioCtx=null,scanNativeTimer=null,scanNativeStream=null,scanNoticeLocked=false,scanNoticeUnlockTimer=null,scanRecentAttempts=[],scanBlockedBeepAt=0,scanScansRef=null,scanMetaRef=null,scanRealtimeRenderTimer=null,findCodeReader=null,findCameraControls=null,findCameraActive=false,findCameraProcessing=false,findLastCameraCode="",findLastCameraAt=0,findNativeTimer=null,findNativeStream=null;const state={staffPermissions:clone(APP_CONFIG.defaultStaff),activeTab:APP_CONFIG.defaultTab,dateISO:todayISO(),sessions:{kiemke:[],lamgia:[],quetma:[],kiemdo:[],hangtra:[]},sessionId:{kiemke:null,lamgia:null,quetma:null,kiemdo:null,hangtra:null},meta:{kiemke:null,lamgia:null,quetma:null,kiemdo:null,hangtra:null},kiemke:{rawItems:[],workingItems:[],invalidRows:[],checks:{},filtered:[],page:1,pageSize:APP_CONFIG.pageSize,digitFilters:[]},lamgia:{rawItems:[],baseItems:[],slots:[],slotStatus:{},filter:'ALL',ignoreQty1:false,hideDone:false,compact:false,settings:clone(APP_CONFIG.defaultCapacity),filteredSlots:[]},scan:{masterCodes:[],scans:[],masterSearch:'',masterPage:1,masterPageSize:300},find:{masterCodes:[],locations:[],needs:[],masterSearch:'',needSearch:'',inputMode:'master',hideMaster:false}};const saveTimers={};const pendingSaves={};let kkHistoryRows=[],kkHistoryPage=0,kkSearchTimer=null,kkStatsTimer=null;const $=id=>document.getElementById(id);
+let db=null,auth=null,firebaseReady=false,appUser=null,activeMultiPicker=null,kkChecksRef=null,kkRemoteQueued=null,kkRemoteRenderTimer=null,kkImportSide="",zoomGuardInstalled=false,lastTouchEnd=0,scanCodeReader=null,scanCameraControls=null,scanCameraActive=false,scanCameraProcessing=false,scanLastCameraCode="",scanLastCameraAt=0,scanAudioCtx=null,scanNativeTimer=null,scanNativeStream=null,scanNoticeLocked=false,scanNoticeUnlockTimer=null,scanRecentAttempts=[],scanBlockedBeepAt=0,scanScansRef=null,scanMetaRef=null,scanRealtimeRenderTimer=null,findCodeReader=null,findCameraControls=null,findCameraActive=false,findCameraProcessing=false,findLastCameraCode="",findLastCameraAt=0,findNativeTimer=null,findNativeStream=null;const state={staffPermissions:clone(APP_CONFIG.defaultStaff),activeTab:APP_CONFIG.defaultTab,dateISO:todayISO(),sessions:{kiemke:[],lamgia:[],quetma:[],kiemdo:[],hangtra:[]},sessionId:{kiemke:null,lamgia:null,quetma:null,kiemdo:null,hangtra:null},meta:{kiemke:null,lamgia:null,quetma:null,kiemdo:null,hangtra:null},kiemke:{rawItems:[],workingItems:[],invalidRows:[],checks:{},filtered:[],page:1,pageSize:APP_CONFIG.pageSize,digitFilters:[]},lamgia:{rawItems:[],baseItems:[],slots:[],slotStatus:{},filter:'ALL',ignoreQty1:false,hideDone:false,compact:false,settings:clone(APP_CONFIG.defaultCapacity),filteredSlots:[]},scan:{masterCodes:[],scans:[],masterSearch:'',masterPage:1,masterPageSize:300},find:{masterCodes:[],locations:[],dailyLocations:[],fixedLocations:[],needs:[],areas:[],masterSearch:'',locSearch:'',needSearch:'',inputMode:'master',locationType:'DAILY',hideMaster:false}};const saveTimers={};const pendingSaves={};let kkHistoryRows=[],kkHistoryPage=0,kkSearchTimer=null,kkStatsTimer=null;const $=id=>document.getElementById(id);
 function clone(x){return JSON.parse(JSON.stringify(x))}function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}function nowStamp(){return Date.now()}function dateTitle(iso){const [y,m,d]=String(iso).split('-');return `Ngày ${d}/${m}/${y}`}function vnNum(n){if(n===''||n==null||Number.isNaN(n))return'';return Number(n).toLocaleString('vi-VN')}function toNum(v){if(v===''||v==null)return 0;if(typeof v==='number')return Number.isFinite(v)?Math.trunc(v):0;const n=Number(String(v).replace(/,/g,'.').replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?Math.trunc(n):0}function norm(s){return String(s??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/\s+/g,' ')}function cleanCode(s){return String(s??'').trim().replace(/\s+/g,' ').toUpperCase()}function escapeHtml(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}function escapeAttr(s){return escapeHtml(s).replace(/'/g,'&#39;')}function codeKey(code){return cleanCode(code).replace(/[.#$\[\]\/]/g,'_')}function selectedValues(sel){return [...sel.options].filter(o=>o.selected).map(o=>o.value)}function setMsg(t,err=false){$('statusMsg').textContent=t;$('statusMsg').classList.toggle('error',!!err)}function pushKey(path){return db.ref(path).push().key}function sessionLabel(s){return `${s.date||''} | ${s.fileName||''} | ${s.createdBy||''} | ${vnNum(s.count||s.workingCount||0)} dòng`}
 function initFirebase(){try{firebase.initializeApp(APP_CONFIG.firebaseConfig);db=firebase.database();auth=firebase.auth();firebaseReady=true}catch(e){setMsg(`Lỗi Firebase init: ${e.message}`,true)}}async function fbGet(path){const s=await db.ref(path).get();return s.exists()?s.val():null}async function fbSet(path,v){return db.ref(path).set(v)}async function fbUpdate(path,v){return db.ref(path).update(v)}async function fbMultiUpdate(updates){return db.ref().update(updates)}async function saveObjectChunked(base,obj,size=500){const entries=Object.entries(obj);for(let i=0;i<entries.length;i+=size){const u={};entries.slice(i,i+size).forEach(([k,v])=>u[k]=v);await fbUpdate(base,u)}}
 
@@ -661,12 +661,47 @@ async function readCodeListFromExcel(file){
   }
   return [...new Set(codes)]
 }
+async function readFindMasterCodesFromExcel(file){
+  const aoa=await readRawExcelAoa(file),codes=[];
+  const headerKeys=['ma','ma sp','ma san pham','ma san-pham','sku','code','barcode','ma vach'];
+  let headerRow=-1,codeCol=-1;
+  for(let r=0;r<Math.min(15,aoa.length);r++){
+    const row=aoa[r]||[];
+    for(let c=0;c<row.length;c++){
+      const h=norm(row[c]);
+      if(headerKeys.some(k=>h===k||h.includes(k))){headerRow=r;codeCol=c;break}
+    }
+    if(codeCol>=0)break;
+  }
+  if(codeCol>=0){
+    for(let r=headerRow+1;r<aoa.length;r++){
+      const code=findClean((aoa[r]||[])[codeCol]);
+      if(code)codes.push(code);
+    }
+  }else{
+    let bestCol=-1,bestCount=0,maxCol=Math.max(0,...aoa.slice(0,80).map(r=>(r||[]).length));
+    for(let c=0;c<maxCol;c++){
+      let count=0;
+      for(let r=0;r<aoa.length;r++)if(findClean((aoa[r]||[])[c]))count++;
+      if(count>bestCount){bestCount=count;bestCol=c}
+    }
+    if(bestCol>=0){
+      for(let r=0;r<aoa.length;r++){
+        const code=findClean((aoa[r]||[])[bestCol]);
+        if(code)codes.push(code);
+      }
+    }
+  }
+  return codes;
+}
 function scanMap(){const m={};state.scan.masterCodes.forEach(c=>m[scanClean(c)]=c);return m}
 function scanDuplicateMap(exceptId=''){const m={};state.scan.scans.forEach(r=>{if(r.id!==exceptId)m[scanClean(r.scanCode)]=r});return m}
 
 function findBasePath(){return `${APP_CONFIG.root}/${APP_CONFIG.findRoot}`}
 function findMasterPath(){return `${findBasePath()}/masterCodes`}
 function findDayPath(){return `${findBasePath()}/days/${state.dateISO}`}
+function findDailyLocationsPath(){return `${findDayPath()}/locations`}
+function findFixedLocationsPath(){return `${findBasePath()}/fixedLocations`}
 function findClean(v){return scanClean(v)}
 function findArea(v){return cleanCode(v)||'KHU 1'}
 function findMasterSet(){return new Set((state.find.masterCodes||[]).map(findClean))}
@@ -674,9 +709,9 @@ function findLocationsForCode(code){const c=findClean(code);return (state.find.l
 function findAreaText(code){const areas=[...new Set(findLocationsForCode(code).map(r=>findArea(r.area)).filter(Boolean))];return areas.join(', ')}
 function findSortRows(rows){return [...(rows||[])].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)||String(b.id||'').localeCompare(String(a.id||'')))}
 function findSortCodes(rows){return [...(rows||[])].sort((a,b)=>String(a.code||a).localeCompare(String(b.code||b),'vi'))}
-function resetFindData(){stopFindCamera&&stopFindCamera();state.find={masterCodes:[],locations:[],needs:[],masterSearch:'',needSearch:'',inputMode:'master',hideMaster:false};renderFindAll()}
+function resetFindData(){stopFindCamera&&stopFindCamera();state.find={masterCodes:[],locations:[],dailyLocations:[],fixedLocations:[],needs:[],areas:[],masterSearch:'',locSearch:'',needSearch:'',inputMode:'master',locationType:'DAILY',hideMaster:false};renderFindAll()}
 function renderFindSessionSelect(){const m=state.find.masterCodes.length,l=state.find.locations.length,n=state.find.needs.length;$('sessionSelect').innerHTML=`<option value="kiemdo">${escapeHtml(state.dateISO)} | Kiếm Đồ | TPOS ${vnNum(m)} | Vị trí ${vnNum(l)} | Cần tìm ${vnNum(n)}</option>`;state.sessionId.kiemdo='kiemdo';state.meta.kiemdo={date:state.dateISO,count:m,locations:l,needs:n}}
-async function loadFindDay(){if(!appUser)return;state.dateISO=$('workDate').value||todayISO();$('dateTitle').textContent=dateTitle(state.dateISO);const [master,locs,needs]=await Promise.all([fbGet(findMasterPath()),fbGet(`${findDayPath()}/locations`),fbGet(`${findDayPath()}/needs`)]);state.find.masterCodes=Object.values(master||{}).map(x=>typeof x==='string'?x:x.code).map(findClean).filter(Boolean).sort((a,b)=>a.localeCompare(b,'vi'));state.find.locations=Object.entries(locs||{}).map(([id,v])=>({...v,id}));state.find.needs=Object.entries(needs||{}).map(([id,v])=>({...v,id}));renderFindAll();renderFindSessionSelect();setMsg(`Đang ở tab KIẾM ĐỒ ngày ${state.dateISO}. Cột 1 lưu lâu dài, cột 2/cột 3 lưu theo ngày.`)}
+async function loadFindDay(){if(!appUser)return;state.dateISO=$('workDate').value||todayISO();$('dateTitle').textContent=dateTitle(state.dateISO);const [master,daily,fixed,needs,areaCfg]=await Promise.all([fbGet(findMasterPath()),fbGet(findDailyLocationsPath()),fbGet(findFixedLocationsPath()),fbGet(`${findDayPath()}/needs`),fbGet(`${findBasePath()}/areas`)]);state.find.masterCodes=Object.values(master||{}).map(x=>typeof x==='string'?x:x.code).map(findClean).filter(Boolean).sort((a,b)=>a.localeCompare(b,'vi'));state.find.dailyLocations=Object.entries(daily||{}).map(([id,v])=>({...v,id,locationType:'DAILY',locationDay:state.dateISO}));state.find.fixedLocations=Object.entries(fixed||{}).map(([id,v])=>({...v,id,locationType:'FIXED'}));state.find.locations=[...state.find.dailyLocations,...state.find.fixedLocations];state.find.needs=Object.entries(needs||{}).map(([id,v])=>({...v,id}));const savedAreas=Object.values(areaCfg?.items||{}).map(x=>typeof x==='string'?x:x.name).map(findArea).filter(Boolean),usedAreas=[...new Set(state.find.locations.map(r=>findArea(r.area)).filter(Boolean))];state.find.areas=areaCfg?.configured?[...new Set(savedAreas)]:[...new Set(savedAreas.length?savedAreas:(usedAreas.length?usedAreas:['KHU 1']))];renderFindAll();renderFindSessionSelect();setMsg(`Đang ở tab KIẾM ĐỒ ngày ${state.dateISO}. Cột 2 hiển thị Hằng ngày của ngày đang mở và toàn bộ Cố định.`)}
 function renderFindAll(){renderFindStats();renderFindCodeSuggest();renderFindMaster();renderFindLocations();renderFindNeeds();renderFindPermissionUI()}
 function renderFindStats(){const m=state.find.masterCodes.length,l=state.find.locations.length,n=state.find.needs.length;if($('findStatMaster'))$('findStatMaster').textContent=vnNum(m);if($('findStatLoc'))$('findStatLoc').textContent=vnNum(l);if($('findStatNeed'))$('findStatNeed').textContent=vnNum(n);if($('findSummary'))$('findSummary').textContent=`${vnNum(m)} mã TPOS | ${vnNum(l)} dòng vị trí | ${vnNum(n)} mã cần tìm`;if($('findMasterCount'))$('findMasterCount').textContent=`${vnNum(m)} mã`;if($('findLocCount'))$('findLocCount').textContent=`${vnNum(l)} dòng`;if($('findNeedCount'))$('findNeedCount').textContent=`${vnNum(n)} mã`;if(state.activeTab==='kiemdo')renderFindSessionSelect()}
 function renderFindCodeSuggest(){const dl=$('findCodeSuggest');if(!dl)return;dl.innerHTML=(state.find.masterCodes||[]).slice(0,8000).map(c=>`<option value="${escapeAttr(c)}"></option>`).join('')}
@@ -685,7 +720,7 @@ function renderFindLocations(){const body=$('findLocBody');if(!body)return;const
 function renderFindNeeds(){const body=$('findNeedBody');if(!body)return;const q=norm(state.find.needSearch||''),rows=findSortRows(state.find.needs).filter(r=>!q||norm(r.code).includes(q)||norm(findAreaText(r.code)).includes(q));body.innerHTML=rows.map((r,i)=>{const areaNow=findAreaText(r.code),area=areaNow||r.foundArea||'',hasLoc=!!areaNow,done=!!r.foundAt;const cls=done?'findHitRow':hasLoc?'':'findMissingRow';let timeHtml='';if(done)timeHtml=escapeHtml(new Date(r.foundAt).toLocaleString('vi-VN'));else if(hasLoc&&canEdit())timeHtml=`<button class="green findPickedBtn" data-find-picked="${escapeAttr(r.id)}">Đã lấy</button>`;else timeHtml=hasLoc?'Có vị trí':'Chưa có';return `<tr class="${cls}" data-find-need="${escapeAttr(r.id)}"><td>${i+1}</td><td class="findCodeCell">${escapeHtml(r.code||'')}</td><td class="findAreaCell">${escapeHtml(area||'Chưa có')}</td><td class="findTimeCell">${timeHtml}</td></tr>`}).join('')||'<tr><td colspan="4" class="findEmpty">Chưa có mã cần tìm.</td></tr>'}
 function renderFindPermissionUI(){const admin=isAdmin(),edit=canEdit();['findMasterInputBtn','findMasterClearBtn'].forEach(id=>setUnavailable(id,!admin));['findLocInputBtn','findLocImportBtn','findLocClearBtn','findNeedInputBtn','findNeedImportBtn','findNeedClearBtn'].forEach(id=>setUnavailable(id,!edit));setUnavailable('findMasterExportBtn',!(admin||edit||isViewOnly()))}
 async function saveFindMaster(){const obj={};(state.find.masterCodes||[]).forEach(c=>obj[codeKey(c)]={code:c,updatedAt:nowStamp(),updatedBy:appUser?.name||''});await fbSet(findMasterPath(),obj)}
-async function addFindMasterCodes(codes){if(!isAdmin())return alert('Chỉ Admin được sửa danh sách TPOS.');const incoming=(codes||[]).map(findClean).filter(Boolean);if(!incoming.length)return alert('Không có mã hợp lệ.');const set=findMasterSet(),before=set.size;incoming.forEach(c=>set.add(c));state.find.masterCodes=[...set].sort((a,b)=>a.localeCompare(b,'vi'));await saveFindMaster();renderFindAll();setMsg(`Đã bổ sung ${vnNum(state.find.masterCodes.length-before)} mã TPOS. Tổng ${vnNum(state.find.masterCodes.length)} mã.`);return {added:state.find.masterCodes.length-before,total:state.find.masterCodes.length}}
+async function addFindMasterCodes(codes){if(!isAdmin())return alert('Chỉ Admin được sửa danh sách TPOS.');const incoming=(codes||[]).map(findClean).filter(Boolean);if(!incoming.length)return alert('Không có mã hợp lệ.');const set=findMasterSet(),updates={},addedCodes=[];let existed=0;incoming.forEach(c=>{if(set.has(c)){existed++;return}set.add(c);addedCodes.push(c);updates[codeKey(c)]={code:c,updatedAt:nowStamp(),updatedBy:appUser?.name||''}});state.find.masterCodes=[...set].sort((a,b)=>a.localeCompare(b,'vi'));if(addedCodes.length)await fbUpdate(findMasterPath(),updates);renderFindAll();setMsg(`Đọc ${vnNum(incoming.length)} mã TPOS: thêm mới ${vnNum(addedCodes.length)}, đã tồn tại ${vnNum(existed)}. Tổng hiện có ${vnNum(state.find.masterCodes.length)} mã.`);return {read:incoming.length,added:addedCodes.length,existed,total:state.find.masterCodes.length}}
 async function clearFindMaster(){if(!isAdmin())return alert('Chỉ Admin được xóa danh sách TPOS.');if(!state.find.masterCodes.length)return;if(!confirm(`Xóa toàn bộ ${vnNum(state.find.masterCodes.length)} mã TPOS? Cột 2/cột 3 trong ngày không bị xóa.`))return;state.find.masterCodes=[];await fbSet(findMasterPath(),null);renderFindAll();setMsg('Đã xóa danh sách TPOS của Kiếm Đồ.')}
 function findValidateCodeInMaster(code){const c=findClean(code);if(!c)return {ok:false,reason:'Mã rỗng'};if(!state.find.masterCodes.length)return {ok:false,reason:'Chưa có danh sách TPOS ở cột 1'};if(!findMasterSet().has(c))return {ok:false,reason:'Không có trong danh sách TPOS'};return {ok:true,code:c}}
 function findLocationDuplicate(code,area){const c=findClean(code),a=findArea(area);return (state.find.locations||[]).find(r=>findClean(r.code)===c&&findArea(r.area)===a)}
@@ -711,7 +746,7 @@ function stopFindCamera(){findCameraActive=false;findCameraProcessing=false;try{
 async function findHandleCameraDecoded(raw){const clean=findClean(raw);if(!clean||findCameraProcessing)return;const now=Date.now();if(clean===findLastCameraCode&&now-findLastCameraAt<1400)return;findLastCameraCode=clean;findLastCameraAt=now;findCameraProcessing=true;try{if(state.find.inputMode==='loc'){await addFindLocationCode(clean,$('findModalArea').value,'Camera quét')}else if(state.find.inputMode==='master'){await addFindMasterCodes([clean])}else{await addFindNeedCode(clean,'Camera quét')}setFindCameraStatus(`Đã quét: ${clean}`,'ok')}catch(e){setFindCameraStatus(`Lỗi quét: ${e.message}`,'err')}finally{setTimeout(()=>{findCameraProcessing=false},650)}}
 async function startFindCamera(){if(state.find.inputMode==='master'&&!isAdmin())return alert('Chỉ Admin được sửa danh sách TPOS.');if(state.find.inputMode!=='master'&&!canEdit())return alert('Tài khoản chỉ xem không được thao tác.');const box=$('findCameraBox'),video=$('findCameraVideo');if(!box||!video)return;if(findCameraActive)return;unlockScanBeep();box.classList.add('on');setFindCameraStatus('Đang mở camera sau...');try{findCameraActive=true;if(await startFindNativeCamera(video)){setFindCameraStatus('Camera đang quét bằng trình duyệt... đưa mã vào khung','ok');return}const ZX=await ensureZxingApi();if(!ZX||!ZX.BrowserMultiFormatReader)throw new Error('Chưa tải được thư viện quét mã. Đổi mạng hoặc tải lại web rồi bấm Camera quét lại.');const hints=makeZxingHints(ZX);findCodeReader=hints?new ZX.BrowserMultiFormatReader(hints):new ZX.BrowserMultiFormatReader();const callback=(result)=>{if(result){const text=typeof result.getText==='function'?result.getText():String(result.text||result);findHandleCameraDecoded(text)}};if(typeof findCodeReader.decodeFromConstraints==='function')findCameraControls=await findCodeReader.decodeFromConstraints({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}},video,callback);else findCameraControls=await findCodeReader.decodeFromVideoDevice(undefined,video,callback);setFindCameraStatus('Camera đang quét bằng ZXing... đưa mã vào khung','ok')}catch(e){findCameraActive=false;setFindCameraStatus(`Không mở được camera: ${e.message}`,'err');alert(`Không mở được camera: ${e.message}`);stopFindCamera()}}
 function bindFindEvents(){if(!$('findPage'))return;$('findToggleMasterBtn').addEventListener('click',()=>{state.find.hideMaster=!state.find.hideMaster;$('findPage').classList.toggle('masterHidden',state.find.hideMaster);$('findToggleMasterBtn').textContent=state.find.hideMaster?'Hiện cột TPOS':'Ẩn cột TPOS'});$('findMasterSearch').addEventListener('input',()=>{state.find.masterSearch=$('findMasterSearch').value;renderFindMaster()});$('findNeedSearch').addEventListener('input',()=>{state.find.needSearch=$('findNeedSearch').value;renderFindNeeds()});$('findReloadBtn').addEventListener('click',loadFindDay);$('findMasterInputBtn').addEventListener('click',()=>openFindInput('master'));$('findLocInputBtn').addEventListener('click',()=>openFindInput('loc'));$('findNeedInputBtn').addEventListener('click',()=>openFindInput('need'));$('findMasterClearBtn').addEventListener('click',clearFindMaster);$('findLocClearBtn').addEventListener('click',clearFindLocations);$('findNeedClearBtn').addEventListener('click',clearFindNeeds);$('findMasterExportBtn').addEventListener('click',exportFindMaster);$('findLocImportBtn').addEventListener('click',()=>$('findLocFileInput').click());$('findNeedImportBtn').addEventListener('click',()=>$('findNeedFileInput').click());$('findLocFileInput').addEventListener('change',async e=>{const file=e.target.files[0];if(file)await importFindLocations(file);e.target.value=''});$('findNeedFileInput').addEventListener('change',async e=>{const file=e.target.files[0];if(file){const codes=await readCodeListFromExcel(file);await addManyFindNeeds(codes,'Up file')}e.target.value=''});$('findInputCloseBtn').addEventListener('click',()=>{stopFindCamera();$('findInputModal').classList.add('hidden')});$('findQuickAddBtn').addEventListener('click',findHandleQuick);$('findQuickAddNoAreaBtn').addEventListener('click',findHandleQuick);$('findQuickInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findHandleQuick()}});$('findQuickInputNoArea').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findHandleQuick()}});$('findBulkSaveBtn').addEventListener('click',findHandleBulk);$('findCameraBtn').addEventListener('click',startFindCamera);$('findCameraNoAreaBtn').addEventListener('click',startFindCamera);$('findCameraStopBtn').addEventListener('click',stopFindCamera);$('findLocBody').addEventListener('click',e=>{const btn=e.target.closest('[data-find-delete-loc]');if(btn)deleteFindLocation(btn.dataset.findDeleteLoc)});$('findNeedBody').addEventListener('click',e=>{const btn=e.target.closest('[data-find-picked]');if(btn)findMarkNeedPicked(btn.dataset.findPicked)})}
-function bindFindUploadIntercept(){const inp=$('excelInput');if(!inp)return;inp.addEventListener('change',async e=>{if(state.activeTab!=='kiemdo')return;e.preventDefault();e.stopImmediatePropagation();const file=e.target.files&&e.target.files[0];if(!file)return;if(!canUploadDelete()){e.target.value='';return alert('Chỉ Admin được up Excel mã TPOS.')}try{setMsg(`Đang đọc Excel Kiếm Đồ ${file.name}...`);const codes=await readCodeListFromExcel(file);await addFindMasterCodes(codes);setMsg(`Đã bổ sung danh sách TPOS Kiếm Đồ từ Excel ${file.name}: ${codes.length.toLocaleString('vi-VN')} dòng đọc được.`)}catch(err){setMsg(`Lỗi nhập Excel Kiếm Đồ: ${err.message||err}`,true)}finally{e.target.value=''}},true)}
+function bindFindUploadIntercept(){const inp=$('excelInput');if(!inp)return;inp.addEventListener('change',async e=>{if(state.activeTab!=='kiemdo')return;e.preventDefault();e.stopImmediatePropagation();const file=e.target.files&&e.target.files[0];if(!file)return;if(!canUploadDelete()){e.target.value='';return alert('Chỉ Admin được up Excel mã TPOS.')}try{setMsg(`Đang đọc Excel Kiếm Đồ ${file.name}...`);const codes=await readFindMasterCodesFromExcel(file),result=await addFindMasterCodes(codes);if(!result)return;const msg=`UPLOAD MÃ TPOS HOÀN TẤT\n\nTổng số mã đọc: ${vnNum(result.read)}\nĐã thêm mã mới: ${vnNum(result.added)}\nMã đã tồn tại: ${vnNum(result.existed)}`;alert(msg);setMsg(`Up Excel TPOS ${file.name}: đọc ${vnNum(result.read)}, thêm mới ${vnNum(result.added)}, đã tồn tại ${vnNum(result.existed)}.`)}catch(err){setMsg(`Lỗi nhập Excel Kiếm Đồ: ${err.message||err}`,true)}finally{e.target.value=''}},true)}
 
 function sortScanRows(){state.scan.scans=(state.scan.scans||[]).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)||String(b.id||'').localeCompare(String(a.id||'')))}
 function upsertScanRow(id,val){
@@ -1739,5 +1774,218 @@ async function boot(){
 <script src="find-audio-patch.js?v=20260711g"></script>
 <script src="scan-return-request-patch.js?v=20260711c"></script>
 <script src="find-repeat-hit-patch.js?v=20260712a"></script>
+
+<script>
+/* KIEM DO DAILY/FIXED FINAL PATCH 2026-07-30 BEGIN */
+(()=>{
+const byId=id=>document.getElementById(id);
+if(!byId('findPage'))return;
+const DAILY='DAILY',FIXED='FIXED';
+const areaNorm=v=>cleanCode(v);
+const typeText=t=>t===FIXED?'Cố định':'Hằng ngày';
+const rowType=r=>String(r?.locationType||r?.type||DAILY).toUpperCase()===FIXED?FIXED:DAILY;
+const rowDateText=r=>r?.createdAt?new Date(r.createdAt).toLocaleString('vi-VN'):(r?.locationDay||state.dateISO||'');
+const fixedPath=()=>findFixedLocationsPath();
+const dailyPath=()=>findDailyLocationsPath();
+const areaPath=()=>`${findBasePath()}/areas`;
+let pendingCodes=new Set();
+
+function findV2Beep(kind){
+  try{if(typeof window.primeKiemDoSound==='function')window.primeKiemDoSound()}catch(e){}
+  try{
+    if(kind==='hit'&&typeof window.playKiemDoHitBeep==='function')return window.playKiemDoHitBeep();
+    if(kind==='err'&&typeof window.playKiemDoErrorBeep==='function')return window.playKiemDoErrorBeep();
+    if(kind==='ok'&&typeof window.playKiemDoOkBeep==='function')return window.playKiemDoOkBeep();
+    if(kind==='hit')return playFindHitBeep();
+    if(kind==='err')return playScanErrorBeep();
+    return playScanBeep();
+  }catch(e){}
+}
+function ensureFindV2Notice(){
+  let el=byId('findFastNotice');
+  if(!el){el=document.createElement('div');el.id='findFastNotice';document.body.appendChild(el)}
+  return el;
+}
+let noticeTimer=null;
+function showFindV2Notice(type,title,code,detail='',duration=1800){
+  const el=ensureFindV2Notice();
+  el.className=`findFastNotice ${type}`;
+  el.innerHTML=`<div class="findFastNoticeTitle">${escapeHtml(title)}</div><div class="findFastNoticeCode">${escapeHtml(code||'')}</div>${detail?`<div class="findFastNoticeDetail">${escapeHtml(detail)}</div>`:''}`;
+  el.classList.remove('hidden');
+  if(noticeTimer)clearTimeout(noticeTimer);
+  noticeTimer=setTimeout(()=>el.classList.add('hidden'),duration);
+}
+function ensureDuplicateModal(){
+  let modal=byId('findDuplicateModal');
+  if(modal)return modal;
+  modal=document.createElement('div');
+  modal.id='findDuplicateModal';
+  modal.className='modal hidden';
+  modal.innerHTML='<div class="modalCard findDuplicateCard"><div class="modalHead"><b>TRÙNG MÃ</b><button id="findDuplicateCloseBtn">Đóng</button></div><div id="findDuplicateBody"></div></div>';
+  document.body.appendChild(modal);
+  byId('findDuplicateCloseBtn').addEventListener('click',()=>modal.classList.add('hidden'));
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.add('hidden')});
+  return modal;
+}
+function showFindDuplicate(row){
+  const modal=ensureDuplicateModal();
+  byId('findDuplicateBody').innerHTML=`<div class="findDupTitle">TRÙNG MÃ</div><div class="findDupGrid"><b>Mã</b><strong>${escapeHtml(row.code||'')}</strong><b>Khu</b><strong>${escapeHtml(row.area||'')}</strong><b>Loại</b><strong>${escapeHtml(typeText(rowType(row)))}</strong><b>Ngày tạo</b><strong>${escapeHtml(rowDateText(row))}</strong></div>`;
+  modal.classList.remove('hidden');
+}
+function rebuildLocations(){
+  state.find.dailyLocations=state.find.dailyLocations||[];
+  state.find.fixedLocations=state.find.fixedLocations||[];
+  state.find.locations=[...state.find.dailyLocations,...state.find.fixedLocations];
+}
+function findDisplayedLocationRows(){
+  const q=norm(state.find.locSearch||'');
+  return findSortRows(state.find.locations||[]).filter(r=>!q||norm([r.code,r.area,typeText(rowType(r)),rowDateText(r)].join(' ')).includes(q));
+}
+function areaStyleV2(area){
+  const palette=[['#e8f1ff','#134e8e'],['#fff0e5','#9a4b00'],['#edf9e8','#286317'],['#f4eaff','#6b2ca0'],['#ffeaf1','#9b244d'],['#e7f8f7','#0f6d68'],['#fff8d9','#7a5b00'],['#eef0ff','#4046a3'],['#f6ece7','#7c3f23'],['#eaf7ff','#05627d']];
+  const t=areaNorm(area)||'-';let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;
+  const p=palette[h%palette.length];return `background:${p[0]};color:${p[1]};border-color:${p[1]}55`;
+}
+function renderAreasV2(){
+  const sel=byId('findAreaSelectV2');if(!sel)return;
+  const old=areaNorm(sel.value),rows=[...new Set((state.find.areas||[]).map(areaNorm).filter(Boolean))];
+  sel.innerHTML=rows.map(a=>`<option value="${escapeAttr(a)}">${escapeHtml(a)}</option>`).join('')||'<option value="">-- Chưa có khu --</option>';
+  sel.value=rows.includes(old)?old:(rows[0]||'');
+}
+async function saveAreasV2(){
+  const items={};(state.find.areas||[]).map(areaNorm).filter(Boolean).forEach((name,i)=>items[codeKey(name)]={name,order:i+1,updatedAt:nowStamp(),updatedBy:appUser?.name||''});
+  await fbSet(areaPath(),{configured:true,items,updatedAt:nowStamp(),updatedBy:appUser?.name||''});
+}
+async function addAreaV2(){
+  if(!isAdmin())return alert('Chỉ Admin được tạo khu.');
+  const name=areaNorm(prompt('Nhập tên khu mới. Ví dụ: A, B, C hoặc 1, 2, 3:',''));if(!name)return;
+  if((state.find.areas||[]).some(a=>areaNorm(a)===name)){renderAreasV2();byId('findAreaSelectV2').value=name;return alert(`Khu ${name} đã có.`)}
+  state.find.areas=[...(state.find.areas||[]),name];await saveAreasV2();renderAreasV2();byId('findAreaSelectV2').value=name;setMsg(`Đã tạo khu ${name}.`);
+}
+async function deleteAreaV2(){
+  if(!isAdmin())return alert('Chỉ Admin được xóa khu.');
+  const name=areaNorm(byId('findAreaSelectV2')?.value);if(!name)return alert('Chưa chọn khu để xóa.');
+  const used=(state.find.locations||[]).filter(r=>areaNorm(r.area)===name).length;
+  if(!confirm(`Xóa khu ${name} khỏi danh sách khu mặc định?${used?` Có ${vnNum(used)} dòng cột 2 đang ghi khu này; dữ liệu dòng vẫn giữ.`:''}`))return;
+  state.find.areas=(state.find.areas||[]).filter(a=>areaNorm(a)!==name);await saveAreasV2();renderAreasV2();setMsg(`Đã xóa khu ${name} khỏi danh sách khu mặc định.`);
+}
+window.findAreaText=function(code){
+  const c=findClean(code),areas=[...new Set((state.find.locations||[]).filter(r=>findClean(r.code)===c).map(r=>areaNorm(r.area)).filter(Boolean))];
+  return areas.join(', ');
+};
+window.renderFindLocations=function(){
+  const body=byId('findLocBody');if(!body)return;
+  const rows=findDisplayedLocationRows();
+  body.innerHTML=rows.map((r,i)=>{const hit=(state.find.needs||[]).some(n=>findClean(n.code)===findClean(r.code)),fixed=rowType(r)===FIXED;return `<tr class="${hit?'findHitRow':''}" data-find-loc="${escapeAttr(r.id)}"><td>${i+1}</td><td class="findCodeCell">${escapeHtml(r.code||'')}</td><td class="findAreaCell"><span class="findAreaBadge" style="${areaStyleV2(r.area)}">${escapeHtml(r.area||'')}</span></td><td class="findTypeCell ${fixed?'fixed':'daily'}">${escapeHtml(typeText(rowType(r)))}</td><td class="findTimeCell">${escapeHtml(rowDateText(r))}</td><td>${canEdit()?`<button class="danger" data-find-delete-loc="${escapeAttr(r.id)}">Xóa</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="6" class="findEmpty">Chưa có mã phù hợp trong cột 2.</td></tr>';
+};
+window.renderFindStats=function(){
+  const m=(state.find.masterCodes||[]).length,d=(state.find.dailyLocations||[]).length,f=(state.find.fixedLocations||[]).length,n=(state.find.needs||[]).length,l=d+f;
+  if(byId('findStatMaster'))byId('findStatMaster').textContent=vnNum(m);
+  if(byId('findStatLoc'))byId('findStatLoc').textContent=vnNum(l);
+  if(byId('findStatNeed'))byId('findStatNeed').textContent=vnNum(n);
+  if(byId('findSummary'))byId('findSummary').textContent=`${vnNum(m)} mã TPOS | ${vnNum(d)} Hằng ngày + ${vnNum(f)} Cố định | ${vnNum(n)} mã cần tìm`;
+  if(byId('findMasterCount'))byId('findMasterCount').textContent=`${vnNum(m)} mã`;
+  if(byId('findLocCount'))byId('findLocCount').textContent=`${vnNum(l)} dòng`;
+  if(byId('findNeedCount'))byId('findNeedCount').textContent=`${vnNum(n)} mã`;
+  if(state.activeTab==='kiemdo')renderFindSessionSelect();
+};
+window.renderFindPermissionUI=function(){
+  const admin=isAdmin(),edit=canEdit();
+  ['findMasterInputBtn','findMasterClearBtn','findAreaAddBtnV2','findAreaDeleteBtnV2','findDeleteMonthBtn'].forEach(id=>{if(byId(id))setUnavailable(id,!admin)});
+  ['findLocImportBtnV2','findLocClearBtnV2','findLocManualAddBtnV2'].forEach(id=>{if(byId(id))setUnavailable(id,!edit)});
+  if(byId('findLocExportBtn'))setUnavailable('findLocExportBtn',!(admin||edit||isViewOnly()));
+  ['findLocScanInputV2','findLocManualInputV2','findAreaSelectV2','findLocTypeSelect','findLocSearchV2'].forEach(id=>{const el=byId(id);if(el)el.disabled=!edit});
+  ['findNeedImportBtn','findNeedClearBtn','findNeedManualAddBtn'].forEach(id=>{if(byId(id))setUnavailable(id,!edit)});
+  ['findNeedScanInput','findNeedManualInput'].forEach(id=>{const el=byId(id);if(el)el.disabled=!edit});
+  setUnavailable('findMasterExportBtn',!(admin||edit||isViewOnly()));
+};
+window.renderFindAll=function(){renderFindStats();renderFindCodeSuggest();renderAreasV2();renderFindMaster();renderFindLocations();renderFindNeeds();renderFindPermissionUI()};
+
+function findLocationDuplicateV2(code){const c=findClean(code);return (state.find.locations||[]).find(r=>findClean(r.code)===c)}
+async function addFindLocationV2(code,area,type,source='Quét mã',quiet=false){
+  if(!canEdit()){if(!quiet)alert('Tài khoản chỉ xem không được thao tác.');return {ok:false,reason:'view'}}
+  const a=areaNorm(area),raw=findClean(code),t=type===FIXED?FIXED:DAILY;
+  if(!a){if(!quiet){findV2Beep('err');showFindV2Notice('err','CHƯA CHỌN KHU',raw,'Chọn khu trước khi quét',2000)}return {ok:false,reason:'Chưa chọn khu',code:raw}}
+  const v=findValidateCodeInMaster(code);
+  if(!v.ok){if(!quiet){findV2Beep('err');showFindV2Notice('err','KHÔNG CÓ MÃ',raw,v.reason,2300)}return {ok:false,reason:v.reason,code:raw}}
+  const clean=v.code,dup=findLocationDuplicateV2(clean);
+  if(dup||pendingCodes.has(clean)){if(!quiet){findV2Beep('err');showFindDuplicate(dup||{code:clean,area:a,locationType:t,createdAt:nowStamp()})}return {ok:false,reason:'Trùng mã',code:clean,duplicate:dup}}
+  const createdAt=nowStamp(),id=t===FIXED?codeKey(clean):pushKey(dailyPath()),row={code:clean,area:a,locationType:t,source,createdAt,createdBy:appUser?.name||'',updatedAt:createdAt,updatedBy:appUser?.name||''};
+  if(t===DAILY)row.locationDay=state.dateISO;
+  pendingCodes.add(clean);
+  if(t===FIXED)state.find.fixedLocations.unshift({...row,id});else state.find.dailyLocations.unshift({...row,id});
+  rebuildLocations();renderFindStats();renderFindLocations();renderFindNeeds();
+  const hits=(state.find.needs||[]).filter(n=>findClean(n.code)===clean);
+  if(!quiet){if(hits.length){findV2Beep('hit');showFindV2Notice('hit','GẶP MÃ CẦN TÌM',clean,`Khu ${a} - bỏ riêng ra rổ`,3400)}else{findV2Beep('ok');showFindV2Notice('ok','ĐÃ GHI VỊ TRÍ',clean,`${a} - ${typeText(t)}`,1300)}}
+  try{await fbSet(t===FIXED?`${fixedPath()}/${id}`:`${dailyPath()}/${id}`,row);pendingCodes.delete(clean);return {ok:true,hit:!!hits.length,code:clean,area:a,type:t}}
+  catch(err){pendingCodes.delete(clean);if(t===FIXED)state.find.fixedLocations=state.find.fixedLocations.filter(r=>r.id!==id);else state.find.dailyLocations=state.find.dailyLocations.filter(r=>r.id!==id);rebuildLocations();renderFindAll();findV2Beep('err');showFindV2Notice('err','LỖI GHI FIREBASE',clean,err?.message||'Không ghi được dữ liệu',3200);return {ok:false,reason:err?.message||'Firebase',code:clean}}
+}
+window.addFindLocationCode=function(code,area,source='Quét mã',quiet=false){return addFindLocationV2(code,area,state.find.locationType||DAILY,source,quiet)};
+async function addManyFindLocationsV2(rows,defaultArea,type,source='Up file'){
+  let ok=0,hit=0,duplicates=0,errors=0;
+  for(const item of rows||[]){const code=typeof item==='string'?item:item.code,area=typeof item==='string'?defaultArea:(item.area||defaultArea),r=await addFindLocationV2(code,area,type,source,true);if(r.ok){ok++;if(r.hit)hit++}else if(r.reason==='Trùng mã')duplicates++;else errors++}
+  renderFindAll();
+  if(hit){findV2Beep('hit');showFindV2Notice('hit','CÓ MÃ CẦN TÌM',`${vnNum(hit)} mã`,`Đã ghi ${vnNum(ok)} dòng`,4300)}else if(ok){findV2Beep('ok');showFindV2Notice('ok','ĐÃ GHI VỊ TRÍ',`${vnNum(ok)} dòng`,`Trùng ${vnNum(duplicates)} | Lỗi ${vnNum(errors)}`,2600)}else if(duplicates||errors){findV2Beep('err');showFindV2Notice('err','KHÔNG GHI ĐƯỢC','0 dòng',`Trùng ${vnNum(duplicates)} | Lỗi ${vnNum(errors)}`,3200)}
+  return {ok,hit,duplicates,errors};
+}
+window.deleteFindLocation=async function(id){
+  if(!canEdit())return alert('Tài khoản chỉ xem không được thao tác.');
+  const r=(state.find.locations||[]).find(x=>x.id===id);if(!r)return;
+  if(!confirm(`Xóa ${r.code} - ${r.area} - ${typeText(rowType(r))}?`))return;
+  if(rowType(r)===FIXED){await fbSet(`${fixedPath()}/${id}`,null);state.find.fixedLocations=state.find.fixedLocations.filter(x=>x.id!==id)}else{await fbSet(`${dailyPath()}/${id}`,null);state.find.dailyLocations=state.find.dailyLocations.filter(x=>x.id!==id)}
+  rebuildLocations();renderFindAll();setMsg(`Đã xóa ${r.code} (${typeText(rowType(r))}) khỏi cột 2.`);
+};
+async function clearFindLocationsV2(){
+  if(!canEdit())return alert('Tài khoản chỉ xem không được thao tác.');
+  const type=byId('findLocTypeSelect')?.value===FIXED?FIXED:DAILY;
+  if(type===DAILY){
+    const count=(state.find.dailyLocations||[]).length;if(!count)return alert(`Ngày ${state.dateISO} chưa có dữ liệu Hằng ngày.`);
+    if(!confirm(`Xóa ${vnNum(count)} dòng Hằng ngày của ngày ${state.dateISO}? Dữ liệu Cố định không bị ảnh hưởng.`))return;
+    await fbSet(dailyPath(),null);state.find.dailyLocations=[];rebuildLocations();renderFindAll();setMsg(`Đã xóa dữ liệu Hằng ngày của ngày ${state.dateISO}. Dữ liệu Cố định được giữ nguyên.`);return;
+  }
+  const area=areaNorm(byId('findAreaSelectV2')?.value);if(!area)return alert('Loại Cố định bắt buộc chọn Khu trước khi xóa.');
+  const rows=(state.find.fixedLocations||[]).filter(r=>areaNorm(r.area)===area);if(!rows.length)return alert(`Khu ${area} chưa có dữ liệu Cố định.`);
+  if(!confirm(`Xóa ${vnNum(rows.length)} dòng Cố định của khu ${area}? Dữ liệu Hằng ngày không bị ảnh hưởng.`))return;
+  const u={};rows.forEach(r=>u[`${fixedPath()}/${r.id}`]=null);await fbMultiUpdate(u);state.find.fixedLocations=state.find.fixedLocations.filter(r=>areaNorm(r.area)!==area);rebuildLocations();renderFindAll();setMsg(`Đã xóa dữ liệu Cố định của khu ${area}. Dữ liệu Hằng ngày được giữ nguyên.`);
+}
+window.clearFindLocations=clearFindLocationsV2;
+function exportFindLocationsV2(){
+  const rows=findDisplayedLocationRows(),data=rows.map(r=>[r.code||'',r.area||'',typeText(rowType(r)),rowDateText(r)]),ws=XLSX.utils.aoa_to_sheet([['Mã','Khu','Loại','Thời gian'],...data]),wb=XLSX.utils.book_new();
+  ws['!cols']=[{wch:24},{wch:14},{wch:13},{wch:22}];XLSX.utils.book_append_sheet(wb,ws,'Cot 2');XLSX.writeFile(wb,`kiem_do_cot_2_${state.dateISO}.xlsx`);
+}
+async function deleteFindMonthV2(){
+  if(!isAdmin())return alert('Chỉ Admin được xóa dữ liệu theo tháng.');
+  const month=String(byId('workDate')?.value||state.dateISO||todayISO()).slice(0,7);if(!/^\d{4}-\d{2}$/.test(month))return alert('Ngày đang chọn không hợp lệ.');
+  const days=await fbGet(`${findBasePath()}/days`)||{},u={};let dailyCount=0,needCount=0,dayCount=0;
+  Object.entries(days).forEach(([day,val])=>{if(!day.startsWith(`${month}-`))return;const d=Object.keys(val?.locations||{}).length,n=Object.keys(val?.needs||{}).length;if(d||n){dayCount++;dailyCount+=d;needCount+=n;u[`${findBasePath()}/days/${day}/locations`]=null;u[`${findBasePath()}/days/${day}/needs`]=null}});
+  if(!Object.keys(u).length)return alert(`Tháng ${month} không có dữ liệu Hằng ngày hoặc Cột 3 để xóa.`);
+  if(!confirm(`XÓA DỮ LIỆU THÁNG ${month}\n\nHằng ngày Cột 2: ${vnNum(dailyCount)} dòng\nCột 3: ${vnNum(needCount)} dòng\nSố ngày có dữ liệu: ${vnNum(dayCount)}\n\nCột 1 và toàn bộ Cố định sẽ được giữ nguyên.`))return;
+  await fbMultiUpdate(u);await loadFindDay();alert(`Đã xóa dữ liệu tháng ${month}.\nCột 1 và dữ liệu Cố định không bị xóa.`);
+}
+function submitLocationV2(inputId,source){
+  const inp=byId(inputId),code=inp?.value||'',area=areaNorm(byId('findAreaSelectV2')?.value),type=byId('findLocTypeSelect')?.value===FIXED?FIXED:DAILY;
+  if(!findClean(code))return;inp.value='';try{inp.focus()}catch(e){};state.find.locationType=type;addFindLocationV2(code,area,type,source,false);
+}
+function patchLocationUI(){
+  const panels=byId('findPage').querySelectorAll('.findGrid>.findPanel');if(panels.length<3)return;
+  const locTools=panels[1].querySelector('.findPanelTools');
+  locTools.innerHTML=`<div class="findFastLine findFastAreaLine"><label>Khu</label><select id="findAreaSelectV2" class="findAreaSelect"></select><button id="findAreaAddBtnV2" class="primary">+ Khu</button><button id="findAreaDeleteBtnV2" class="danger">Xóa khu</button><label>Loại</label><select id="findLocTypeSelect"><option value="DAILY" selected>Hằng ngày</option><option value="FIXED">Cố định</option></select></div><div class="findFastLine"><label class="findFastLabel scan">Quét mã</label><input id="findLocScanInputV2" class="findDirectInput findScanOnly" placeholder="Quét mã - Enter ghi ngay" autocomplete="off" autocapitalize="characters" spellcheck="false"></div><div class="findFastLine"><label class="findFastLabel manual">Nhập tay</label><input id="findLocManualInputV2" list="findCodeSuggest" class="findDirectInput" placeholder="Nhập mã sản phẩm"><button id="findLocManualAddBtnV2" class="primary">Ghi</button><input id="findLocFileInputV2" type="file" accept=".xlsx,.xls,.csv" class="hidden"><button id="findLocImportBtnV2">Up file</button><button id="findLocExportBtn" class="green">Xuất Excel</button><button id="findLocClearBtnV2" class="danger">Xóa cột 2</button><input id="findLocSearchV2" class="findSearch" placeholder="Tìm mã / khu / loại"><span id="findLocCount" class="muted">0 dòng</span></div>`;
+  panels[1].querySelector('thead tr').innerHTML='<th style="width:52px">STT</th><th>Mã</th><th style="width:110px">Khu chứa</th><th style="width:105px">Loại</th><th style="width:150px">Thời gian</th><th style="width:72px">Xóa</th>';
+  let monthBtn=byId('findDeleteMonthBtn');if(!monthBtn){monthBtn=document.createElement('button');monthBtn.id='findDeleteMonthBtn';monthBtn.className='danger';monthBtn.textContent='Xóa dữ liệu theo tháng';byId('findReloadBtn').insertAdjacentElement('afterend',monthBtn)}
+  byId('findAreaAddBtnV2').addEventListener('click',addAreaV2);byId('findAreaDeleteBtnV2').addEventListener('click',deleteAreaV2);
+  byId('findLocTypeSelect').addEventListener('change',e=>{state.find.locationType=e.target.value===FIXED?FIXED:DAILY});
+  ['findLocScanInputV2','findLocManualInputV2'].forEach(id=>{const el=byId(id);el.addEventListener('focus',()=>{try{window.primeKiemDoSound?.()}catch(e){}});el.addEventListener('pointerdown',()=>{try{window.primeKiemDoSound?.()}catch(e){}});el.addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();e.stopPropagation();submitLocationV2(id,id==='findLocScanInputV2'?'Quét mã':'Nhập tay')})});
+  byId('findLocManualAddBtnV2').addEventListener('click',()=>submitLocationV2('findLocManualInputV2','Nhập tay'));
+  byId('findLocImportBtnV2').addEventListener('click',()=>byId('findLocFileInputV2').click());
+  byId('findLocFileInputV2').addEventListener('change',async e=>{const file=e.target.files?.[0];try{if(file){const area=areaNorm(byId('findAreaSelectV2')?.value),type=byId('findLocTypeSelect')?.value===FIXED?FIXED:DAILY;if(type===FIXED&&!area)return alert('Loại Cố định bắt buộc chọn Khu.');const rows=await readFindLocationRowsFromExcel(file,area);await addManyFindLocationsV2(rows,area,type,'Up file')}}finally{e.target.value=''}});
+  byId('findLocExportBtn').addEventListener('click',exportFindLocationsV2);byId('findLocClearBtnV2').addEventListener('click',clearFindLocationsV2);byId('findDeleteMonthBtn').addEventListener('click',deleteFindMonthV2);
+  byId('findLocSearchV2').addEventListener('input',()=>{state.find.locSearch=byId('findLocSearchV2').value;renderFindLocations()});
+  renderAreasV2();renderFindAll();setTimeout(()=>byId('findLocScanInputV2')?.focus(),80);
+}
+const style=document.createElement('style');style.textContent=`#findPage .findTypeCell{font-weight:900;white-space:nowrap}.findTypeCell.daily{color:#0b5fa5}.findTypeCell.fixed{color:#7c3aed}.findDuplicateCard{width:min(560px,95vw)}.findDupTitle{text-align:center;font-size:34px;font-weight:1000;color:#c1121f;margin:5px 0 14px}.findDupGrid{display:grid;grid-template-columns:120px 1fr;gap:0;border:1px solid #cbd5e1}.findDupGrid>*{padding:10px;border-bottom:1px solid #cbd5e1}.findDupGrid b{background:#f8fafc}.findDupGrid strong{font-size:18px}.findDupGrid>*:nth-last-child(-n+2){border-bottom:0}#findPage #findLocTypeSelect{font-weight:900;min-width:115px}`;document.head.appendChild(style);
+patchLocationUI();
+/* KIEM DO DAILY/FIXED FINAL PATCH 2026-07-30 END */
+})();
+</script>
 </body>
 </html>
