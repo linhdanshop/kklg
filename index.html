@@ -1828,9 +1828,13 @@ function ensureDuplicateModal(){
   return modal;
 }
 function showFindDuplicate(row){
-  const modal=ensureDuplicateModal();
-  byId('findDuplicateBody').innerHTML=`<div class="findDupTitle">TRÙNG MÃ</div><div class="findDupGrid"><b>Mã</b><strong>${escapeHtml(row.code||'')}</strong><b>Khu</b><strong>${escapeHtml(row.area||'')}</strong><b>Loại</b><strong>${escapeHtml(typeText(rowType(row)))}</strong><b>Ngày tạo</b><strong>${escapeHtml(rowDateText(row))}</strong></div>`;
-  modal.classList.remove('hidden');
+  const old=byId('findDuplicateModal');
+  if(old)old.classList.add('hidden');
+  const code=row&&row.code?row.code:'';
+  const area=row&&row.area?row.area:'';
+  const kind=typeText(rowType(row));
+  const time=rowDateText(row);
+  showScanBigNotice(`TRÙNG MÃ\n${code}\nĐã có ở khu ${area}${kind?` - ${kind}`:''}${time?`\nLúc ${time}`:''}`,'err',8000);
 }
 function rebuildLocations(){
   state.find.dailyLocations=state.find.dailyLocations||[];
